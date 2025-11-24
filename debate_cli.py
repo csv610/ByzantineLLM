@@ -2,7 +2,7 @@
 Command-line interface for running debates without Streamlit.
 
 This module provides a simple CLI to run debates using the core debate engine
-(topic_debate.py) without any dependency on Streamlit or other UI frameworks.
+(src.debate_platform) without any dependency on Streamlit or other UI frameworks.
 
 Usage:
     python debate_cli.py --topic "AI will improve employment" --rounds 3
@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 from typing import Dict, Any
 
-from topic_debate import (
+from src.debate_platform import (
     Organizer,
     Debater,
     Judge,

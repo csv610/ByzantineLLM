@@ -1,72 +1,123 @@
-# AI Debate 
+# Multi-Participant AI Debate Platform
 
-This project is an **AI-powered debate platform** that allows users to simulate debates between different language models (LLMs), such as OpenAI's GPT and LLaMA. The platform lets users select a topic, choose AI models for the supporting and opposing sides, and even assign a model to act as the judge, providing a final judgment based on the quality of arguments.
+This is an **advanced AI-powered debate platform** that simulates academic debates with four distinct roles using different LLM models. The platform is powered by **litellm**, enabling seamless integration with any LLM provider (OpenAI, Anthropic, Ollama, etc.).
+
+## Architecture
+
+### Four Participants
+
+1. **Organizer**: Provides a neutral 200-300 word overview of the topic without favoring any side
+2. **Supporter**: Debater arguing in favor of the topic
+3. **Opposer**: Debater arguing against the topic
+4. **Judge**: Evaluates all arguments and provides detailed scoring
+
+Each participant can use a **different LLM model** configured via litellm.
+
+### Debate Flow
+
+- **Round 0**: Organizer sets up the topic with neutral overview
+- **Rounds 1-N**: Debaters alternate presenting arguments
+  - Each debater receives the complete draft of the opponent's previous arguments
+  - Debaters identify gaps, inconsistencies, logical fallacies, and unsupported claims
+  - Rebuttals address specific weaknesses in opponent's arguments
+- **Final Phase**: Judge evaluates all N arguments using a structured rubric:
+  - Argument Quality (0-10)
+  - Evidence Quality (0-10)
+  - Logical Consistency (0-10)
+  - Responsiveness to Gaps (0-10)
+  - Overall Score (0-10)
+  - Detailed Feedback
 
 ## Features
 
-- **Model Agnostic**: Supports multiple language models (OpenAI, LLaMA, etc.) with the flexibility to add more.
-- **Customizable Arguments**: Users can control the randomness (`temperature`) and response length (`max_tokens`) for AI-generated arguments.
-- **Modular Design**: Easily switch between different AI models via a factory pattern.
-- **Multi-Round Debates**: Conduct debates with multiple rounds between supporting and opposing debators.
-- **Judge Evaluation**: An AI judge model evaluates the arguments based on relevancy, accuracy, bias, and factual information, and provides a final decision.
+✅ **Multi-Model Support**: Use different LLM models for each participant via litellm
+✅ **Intelligent Gap Analysis**: Debaters analyze opponent arguments for gaps and inconsistencies
+✅ **Structured Judging**: Comprehensive scoring rubric with detailed feedback
+✅ **Debate Transcripts**: Download complete debate records in JSON format
+✅ **Configurable Rounds**: Run debates with 1-10 rounds
+✅ **Easy UI**: Streamlit-based interface for configuration and monitoring
 
 ## Setup
 
 ### Prerequisites
 
-- Python 3.7 or higher
-- [OpenAI API Key](https://beta.openai.com/signup/)
-- [Ollama](https://ollama.ai/) for running local LLaMA models
+- Python 3.8 or higher
+- API keys for your chosen LLM providers (OpenAI, Claude, etc.)
+- For local models: [Ollama](https://ollama.ai/) installed and running
 
 ### Install Dependencies
-
-Clone the repository and install the required packages:
 
 ```bash
 git clone https://github.com/your-username/ai-debate-platform.git
 cd ai-debate-platform
 pip install -r requirements.txt
+```
+
+### Configure Environment Variables
+
+Create a `.env` file in the project root with your API keys:
+
+```env
+OPENAI_API_KEY=your_openai_key_here
+ANTHROPIC_API_KEY=your_anthropic_key_here
+# Add other provider keys as needed
+```
 
 ### Running the App
 
-1. **Set up OpenAI API key** (if using OpenAI models):  
-   Get your OpenAI API key from [OpenAI's website](https://beta.openai.com/signup/) and enter it into the application when prompted.
+```bash
+streamlit run sl_debate.py
+```
 
-2. **Start the Streamlit app**:
-   ```bash
-   streamlit run app.py
-
-
-
-
-
+The app will open at `http://localhost:8501`
 
 ## Usage
 
-1. **Select Debate Models**: You can choose different models (OpenAI, LLaMA) for the supporting and opposing debators.
-2. **Input a Debate Topic**: Provide a topic for the debate, and the selected AI models will generate arguments.
-3. **Adjust Parameters**: Control `temperature` and `max_tokens` to adjust the creativity and response length of the models.
-4. **Conduct Debate**: The debate takes place over multiple rounds, with AI models responding to each other.
-5. **Final Judgment**: After all rounds are complete, the AI judge evaluates the arguments based on multiple criteria and provides a final verdict.
+1. **Enter the Debate Topic**: Provide the academic topic for debate
+2. **Select LLM Models**: Choose a model for each participant (examples: `gpt-4`, `claude-3-opus`, `ollama/llama2`)
+3. **Configure Participant Names**: Customize names for organizer, debaters, and judge
+4. **Set Number of Rounds**: Choose how many debate rounds (1-10)
+5. **Start the Debate**: Click "Start Debate" to begin
+6. **Review Results**: See scoring and detailed feedback from the judge
+7. **Download Transcript**: Export the complete debate as JSON
 
+## Model Configuration Examples
 
-## Example
+| Provider | Model Format | Example |
+|----------|--------------|---------|
+| OpenAI | `gpt-3.5-turbo`, `gpt-4` | `gpt-4` |
+| Anthropic | `claude-3-opus`, `claude-3-sonnet` | `claude-3-opus-20240229` |
+| Ollama | `ollama/<model_name>` | `ollama/llama2` |
+| Google | `gemini-pro` | `gemini-pro` |
 
-Here's a brief walkthrough:
+## Example Debate
 
-1. **Enter Topic**:  
-   "The impact of AI on human jobs"
+**Topic**: "Artificial Intelligence will have a net positive impact on employment"
 
-2. **Choose Models**:  
-   Select OpenAI for the supporting debator and LLaMA for the opposing debator. Select another model for the judge (or use the same).
+1. **Moderator** provides balanced overview of AI and employment
+2. **Debater A (GPT-4)** argues AI creates more jobs than it displaces
+3. **Debater B (Claude)** counters with concerns about job displacement
+4. Rounds continue with gap analysis and rebuttals
+5. **Judge (Llama)** evaluates both sides comprehensively
+6. Winner determined by overall score
 
-3. **Adjust Parameters**:  
-   Set temperature to 0.7 for creativity, and max tokens to 1024 for detailed responses.
+## Data Models
 
-4. **Start the Debate**:  
-   The models will generate arguments and rebuttals for multiple rounds.
+### Argument
+- `round_number`: Which round (0 for organizer)
+- `participant_name`: Name of the speaker
+- `participant_role`: "organizer", "supporter", "opposer", or "judge"
+- `content`: The actual argument text
+- `timestamp`: When the argument was generated
+- `word_count`: Number of words in the argument
+- `gaps_identified`: List of gaps/inconsistencies found in opponent's arguments
 
-5. **Judge's Decision**:  
-   After the debate, the judge model will evaluate the arguments and declare a winner based on relevancy, accuracy, bias, and factual correctness.
-
+### Score
+- `debater_name`: Name of evaluated debater
+- `argument_quality`: 0-10 rating
+- `evidence_quality`: 0-10 rating
+- `logical_consistency`: 0-10 rating
+- `responsiveness_to_gaps`: 0-10 rating
+- `overall_score`: 0-10 rating
+- `feedback`: Detailed evaluation feedback
 

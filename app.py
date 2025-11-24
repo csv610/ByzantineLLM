@@ -245,28 +245,6 @@ def main():
             value="gpt-4"
         )
 
-        st.subheader("👥 Participant Names")
-
-        organizer_name = st.text_input(
-            "Organizer's Name",
-            value="Moderator"
-        )
-
-        supporter_name = st.text_input(
-            "Supporter's Name",
-            value="Debater A"
-        )
-
-        opposer_name = st.text_input(
-            "Opposer's Name",
-            value="Debater B"
-        )
-
-        judge_name = st.text_input(
-            "Judge's Name",
-            value="Judge"
-        )
-
         st.subheader("📊 Debate Settings")
 
         num_rounds = st.slider(
@@ -291,11 +269,11 @@ def main():
             else:
                 st.session_state.debate_running = True
 
-                # Initialize participants
-                organizer = Organizer(organizer_name, organizer_model)
-                supporter = Debater(supporter_name, supporter_model, is_supporter=True)
-                opposer = Debater(opposer_name, opposer_model, is_supporter=False)
-                judge = Judge(judge_name, judge_model)
+                # Initialize participants with default names
+                organizer = Organizer("Organizer", organizer_model)
+                supporter = Debater("Supporter", supporter_model, is_supporter=True)
+                opposer = Debater("Opposer", opposer_model, is_supporter=False)
+                judge = Judge("Judge", judge_model)
 
                 # Create debate session
                 debate = DebateSession(

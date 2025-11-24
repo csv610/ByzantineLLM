@@ -56,10 +56,10 @@ class DebateSession:
         if not is_valid:
             raise ValueError(f"Invalid debate configuration: {error_msg}")
 
-        organizer = Organizer(config.organizer_name, config.organizer_model)
-        supporter = Debater(config.supporter_name, config.supporter_model, is_supporter=True)
-        opposer = Debater(config.opposer_name, config.opposer_model, is_supporter=False)
-        judge = Judge(config.judge_name, config.judge_model)
+        organizer = Organizer("Organizer", config.organizer_model)
+        supporter = Debater("Supporter", config.supporter_model, is_supporter=True)
+        opposer = Debater("Opposer", config.opposer_model, is_supporter=False)
+        judge = Judge("Judge", config.judge_model)
 
         logger.info(f"Created DebateSession from config: {config.topic}")
         return cls(

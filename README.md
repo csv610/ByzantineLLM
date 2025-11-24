@@ -97,17 +97,13 @@ Simple text-based interface, great for automation
 
 **Option 3: Python API (Reusable library)**
 ```python
-from topic_debate import DebateConfig, DebateSession
+from src.debate_platform import DebateConfig, DebateSession
 
 config = DebateConfig(
     topic="Your topic",
-    organizer_name="Moderator",
     organizer_model="gpt-4",
-    supporter_name="Supporter",
     supporter_model="gpt-4",
-    opposer_name="Opposer",
     opposer_model="claude-3-opus-20240229",
-    judge_name="Judge",
     judge_model="gpt-4",
     num_rounds=3
 )
@@ -125,11 +121,10 @@ python debate_cli.py --config debate_config.json
 
 1. **Enter the Debate Topic**: Provide the academic topic for debate
 2. **Select LLM Models**: Choose a model for each participant (examples: `gpt-4`, `claude-3-opus`, `ollama/llama2`)
-3. **Configure Participant Names**: Customize names for organizer, debaters, and judge
-4. **Set Number of Rounds**: Choose how many debate rounds (1-10)
-5. **Start the Debate**: Click "Start Debate" to begin
-6. **Review Results**: See scoring and detailed feedback from the judge
-7. **Download Transcript**: Export the complete debate as JSON
+3. **Set Number of Rounds**: Choose how many debate rounds (1-10)
+4. **Start the Debate**: Click "Start Debate" to begin
+5. **Review Results**: See scoring and detailed feedback from the judge
+6. **Download Transcript**: Export the complete debate as JSON
 
 ## Model Configuration Examples
 
@@ -209,10 +204,10 @@ Complete documentation is available in the `docs/` folder:
 
 ### DebateConfig
 - `topic`: The debate topic (string)
-- `organizer_name`, `organizer_model`: Organizer configuration
-- `supporter_name`, `supporter_model`: Supporter configuration
-- `opposer_name`, `opposer_model`: Opposer configuration
-- `judge_name`, `judge_model`: Judge configuration
+- `organizer_model`: LLM model for organizer
+- `supporter_model`: LLM model for supporter
+- `opposer_model`: LLM model for opposer
+- `judge_model`: LLM model for judge
 - `num_rounds`: Number of debate rounds (1-10, default 3)
 
 ### Argument

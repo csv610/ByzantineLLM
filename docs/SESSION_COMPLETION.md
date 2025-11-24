@@ -120,18 +120,16 @@ A structured, reusable configuration system for debates.
 
 #### Code Changes (topic_debate.py)
 
-**1. DebateConfig Dataclass (lines 53-91)**
+**1. DebateConfig Dataclass**
 - Fields:
   - `topic: str` - The debate topic
-  - `organizer_name: str` - Organizer name
   - `organizer_model: str` - Organizer LLM model
-  - `supporter_name: str` - Supporter name
   - `supporter_model: str` - Supporter LLM model
-  - `opposer_name: str` - Opposer name
   - `opposer_model: str` - Opposer LLM model
-  - `judge_name: str` - Judge name
   - `judge_model: str` - Judge LLM model
   - `num_rounds: int` - Number of rounds (1-10, default 3)
+
+**Note**: Participant names are now fixed to standard values (Organizer, Supporter, Opposer, Judge)
 
 - Methods:
   - `to_dict()` - Serialize to dictionary
@@ -177,9 +175,11 @@ A structured, reusable configuration system for debates.
    ```python
    config = DebateConfig(
        topic="AI will improve employment",
-       organizer_name="Moderator",
        organizer_model="gpt-4",
-       ...
+       supporter_model="gpt-4",
+       opposer_model="claude-3-opus-20240229",
+       judge_model="gpt-4",
+       num_rounds=3
    )
    debate = DebateSession.from_config(config)
    ```
@@ -371,13 +371,9 @@ import json
 
 config = DebateConfig(
     topic='AI will improve employment',
-    organizer_name='Moderator',
     organizer_model='gpt-4',
-    supporter_name='Alice',
     supporter_model='gpt-4',
-    opposer_name='Bob',
     opposer_model='claude-3-opus-20240229',
-    judge_name='Judge',
     judge_model='gpt-4',
     num_rounds=3
 )

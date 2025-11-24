@@ -14,20 +14,16 @@ The `DebateConfig` dataclass provides a structured, reusable way to configure de
 
 ## DebateConfig Dataclass
 
-### Definition (topic_debate.py:53-91)
+### Definition
 
 ```python
 @dataclass
 class DebateConfig:
     """Configuration for a debate session."""
     topic: str                          # The debate topic
-    organizer_name: str                 # Name of organizer
     organizer_model: str                # LLM model for organizer
-    supporter_name: str                 # Name of supporter
     supporter_model: str                # LLM model for supporter
-    opposer_name: str                   # Name of opposer
     opposer_model: str                  # LLM model for opposer
-    judge_name: str                     # Name of judge
     judge_model: str                    # LLM model for judge
     num_rounds: int = 3                 # Number of debate rounds (1-10)
 
@@ -49,15 +45,17 @@ class DebateConfig:
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | topic | str | Yes | - | The debate topic (any length) |
-| organizer_name | str | Yes | - | Name of the organizer/moderator |
 | organizer_model | str | Yes | - | LLM model for organizer (e.g., "gpt-4") |
-| supporter_name | str | Yes | - | Name of supporting debater |
 | supporter_model | str | Yes | - | LLM model for supporter |
-| opposer_name | str | Yes | - | Name of opposing debater |
 | opposer_model | str | Yes | - | LLM model for opposer |
-| judge_name | str | Yes | - | Name of the judge |
 | judge_model | str | Yes | - | LLM model for judge |
 | num_rounds | int | No | 3 | Number of debate rounds (1-10) |
+
+**Note**: Participant names are now fixed to standard values:
+- Organizer: "Organizer"
+- Supporter: "Supporter"
+- Opposer: "Opposer"
+- Judge: "Judge"
 
 ---
 
@@ -66,17 +64,13 @@ class DebateConfig:
 ### Method 1: Direct Instantiation
 
 ```python
-from topic_debate import DebateConfig
+from src.debate_platform import DebateConfig
 
 config = DebateConfig(
     topic="AI will improve employment",
-    organizer_name="Moderator",
     organizer_model="gpt-4",
-    supporter_name="Dr. Alice",
     supporter_model="claude-3-opus-20240229",
-    opposer_name="Prof. Bob",
     opposer_model="gpt-3.5-turbo",
-    judge_name="Judge Panel",
     judge_model="gpt-4",
     num_rounds=3
 )
@@ -87,18 +81,14 @@ config = DebateConfig(
 ```python
 config_dict = {
     "topic": "Remote work is better than office",
-    "organizer_name": "Moderator",
     "organizer_model": "gpt-4",
-    "supporter_name": "Alice",
     "supporter_model": "gpt-4",
-    "opposer_name": "Bob",
     "opposer_model": "claude-3-opus-20240229",
-    "judge_name": "Judge",
     "judge_model": "gpt-4",
     "num_rounds": 5
 }
 
-from dataclasses import asdict
+from src.debate_platform import DebateConfig
 config = DebateConfig(**config_dict)
 ```
 
@@ -106,7 +96,7 @@ config = DebateConfig(**config_dict)
 
 ```python
 import json
-from topic_debate import DebateConfig
+from src.debate_platform import DebateConfig
 
 # Load from JSON
 with open("debate_config.json") as f:
@@ -144,10 +134,7 @@ else:
 2. **Num Rounds**: Must be between 1 and 10
    - Error: "Number of rounds must be between 1 and 10"
 
-3. **Participant Names**: All four names must be provided and non-empty
-   - Error: "All participant names must be provided"
-
-4. **Participant Models**: All four models must be specified and non-empty
+3. **Participant Models**: All four models must be specified and non-empty
    - Error: "All participant models must be specified"
 
 ### Validation Example
@@ -155,13 +142,9 @@ else:
 ```python
 config = DebateConfig(
     topic="",  # Invalid!
-    organizer_name="Mod",
     organizer_model="gpt-4",
-    supporter_name="A",
     supporter_model="gpt-4",
-    opposer_name="B",
     opposer_model="gpt-4",
-    judge_name="J",
     judge_model="gpt-4",
     num_rounds=3
 )
@@ -178,18 +161,14 @@ print(msg)       # "Topic cannot be empty"
 ### Using from_config() Class Method
 
 ```python
-from topic_debate import DebateConfig, DebateSession
+from src.debate_platform import DebateConfig, DebateSession
 
 # Create config
 config = DebateConfig(
     topic="AI will improve employment",
-    organizer_name="Moderator",
     organizer_model="gpt-4",
-    supporter_name="Dr. Alice",
     supporter_model="claude-3-opus-20240229",
-    opposer_name="Prof. Bob",
     opposer_model="gpt-3.5-turbo",
-    judge_name="Judge Panel",
     judge_model="gpt-4",
     num_rounds=3
 )
@@ -224,7 +203,7 @@ def from_config(cls, config: DebateConfig) -> "DebateSession":
 **Behavior**:
 1. Validates config with `config.validate()`
 2. Raises `ValueError` if invalid
-3. Creates Organizer, Debater, Judge instances
+3. Creates Organizer, Debater, Judge instances with standard names
 4. Returns DebateSession ready to call `run()`
 
 ---
@@ -234,7 +213,7 @@ def from_config(cls, config: DebateConfig) -> "DebateSession":
 ### Use Case 1: Programmatic Debate Creation
 
 ```python
-from topic_debate import DebateConfig, DebateSession
+from src.debate_platform import DebateConfig, DebateSession
 
 # Create multiple debates with different configurations
 topics = [
@@ -246,13 +225,9 @@ topics = [
 for topic in topics:
     config = DebateConfig(
         topic=topic,
-        organizer_name="Moderator",
         organizer_model="gpt-4",
-        supporter_name="Supporter",
         supporter_model="gpt-4",
-        opposer_name="Opposer",
         opposer_model="claude-3-opus-20240229",
-        judge_name="Judge",
         judge_model="gpt-4",
         num_rounds=3
     )
@@ -266,7 +241,7 @@ for topic in topics:
 
 ```python
 import json
-from topic_debate import DebateConfig, DebateSession
+from src.debate_platform import DebateConfig, DebateSession
 
 # Load configuration from file
 with open("config.json") as f:
@@ -287,7 +262,7 @@ result = debate.run(num_rounds=config.num_rounds)
 ### Use Case 3: Building a Debate Manager
 
 ```python
-from topic_debate import DebateConfig, DebateSession
+from src.debate_platform import DebateConfig, DebateSession
 from typing import List
 
 class DebateManager:
@@ -322,7 +297,7 @@ manager.run_all()
 
 ```python
 import requests
-from topic_debate import DebateConfig, DebateSession
+from src.debate_platform import DebateConfig, DebateSession
 
 # Fetch debate configuration from API
 response = requests.get("https://api.example.com/debate-config")
@@ -346,13 +321,9 @@ requests.post("https://api.example.com/debate-result", json=result.to_dict())
 ```json
 {
   "topic": "AI will have a net positive impact on employment",
-  "organizer_name": "Moderator",
   "organizer_model": "gpt-4",
-  "supporter_name": "Dr. Alice Johnson",
   "supporter_model": "claude-3-opus-20240229",
-  "opposer_name": "Prof. Bob Smith",
   "opposer_model": "gpt-3.5-turbo",
-  "judge_name": "Judge Panel",
   "judge_model": "gpt-4",
   "num_rounds": 3
 }
@@ -362,7 +333,7 @@ requests.post("https://api.example.com/debate-result", json=result.to_dict())
 
 ```python
 import json
-from topic_debate import DebateConfig, DebateSession
+from src.debate_platform import DebateConfig, DebateSession
 
 # Load from file
 with open("debate_config.json") as f:
@@ -390,13 +361,9 @@ with open("debate_result.json", "w") as f:
 ```python
 config = DebateConfig(
     topic="AI will improve employment",
-    organizer_name="Moderator",
     organizer_model="gpt-4",
-    supporter_name="Alice",
     supporter_model="gpt-4",
-    opposer_name="Bob",
     opposer_model="claude-3-opus-20240229",
-    judge_name="Judge",
     judge_model="gpt-4",
     num_rounds=3
 )
@@ -405,13 +372,9 @@ config_dict = config.to_dict()
 # Returns:
 # {
 #     "topic": "AI will improve employment",
-#     "organizer_name": "Moderator",
 #     "organizer_model": "gpt-4",
-#     "supporter_name": "Alice",
 #     "supporter_model": "gpt-4",
-#     "opposer_name": "Bob",
 #     "opposer_model": "claude-3-opus-20240229",
-#     "judge_name": "Judge",
 #     "judge_model": "gpt-4",
 #     "num_rounds": 3
 # }
@@ -429,7 +392,7 @@ with open("config.json", "w") as f:
 ### In CLI (debate_cli.py)
 
 ```python
-from topic_debate import DebateConfig
+from src.debate_platform import DebateConfig
 
 # Load from JSON file
 config = DebateConfig(**json.load(open("config.json")))
@@ -437,13 +400,9 @@ config = DebateConfig(**json.load(open("config.json")))
 # Or build from command-line arguments
 config = DebateConfig(
     topic=args.topic,
-    organizer_name=args.organizer_name,
     organizer_model=args.organizer_model,
-    supporter_name=args.supporter_name,
     supporter_model=args.supporter_model,
-    opposer_name=args.opposer_name,
     opposer_model=args.opposer_model,
-    judge_name=args.judge_name,
     judge_model=args.judge_model,
     num_rounds=args.rounds
 )
@@ -455,18 +414,14 @@ result = debate.run(num_rounds=config.num_rounds)
 ### In Web UI (app.py)
 
 ```python
-from topic_debate import DebateConfig
+from src.debate_platform import DebateConfig
 
 # Build from Streamlit inputs
 config = DebateConfig(
     topic=st.sidebar.text_area("Debate Topic"),
-    organizer_name=st.sidebar.text_input("Organizer Name"),
     organizer_model=st.sidebar.text_input("Organizer Model"),
-    supporter_name=st.sidebar.text_input("Supporter Name"),
     supporter_model=st.sidebar.text_input("Supporter Model"),
-    opposer_name=st.sidebar.text_input("Opposer Name"),
     opposer_model=st.sidebar.text_input("Opposer Model"),
-    judge_name=st.sidebar.text_input("Judge Name"),
     judge_model=st.sidebar.text_input("Judge Model"),
     num_rounds=st.sidebar.slider("Number of Rounds", 1, 10, 3)
 )
@@ -487,30 +442,26 @@ else:
 ### Validation Errors
 
 ```python
-from topic_debate import DebateConfig
+from src.debate_platform import DebateConfig
 
 config = DebateConfig(
     topic="Valid topic",
-    organizer_name="",  # Empty!
-    organizer_model="gpt-4",
-    supporter_name="Alice",
+    organizer_model="",  # Empty!
     supporter_model="gpt-4",
-    opposer_name="Bob",
     opposer_model="gpt-4",
-    judge_name="Judge",
     judge_model="gpt-4"
 )
 
 is_valid, msg = config.validate()
 if not is_valid:
     print(f"Error: {msg}")
-    # Output: "Error: All participant names must be provided"
+    # Output: "Error: All participant models must be specified"
 ```
 
 ### Creation Errors
 
 ```python
-from topic_debate import DebateConfig, DebateSession
+from src.debate_platform import DebateConfig, DebateSession
 
 config = DebateConfig(...)
 is_valid, msg = config.validate()
@@ -531,7 +482,7 @@ except ValueError as e:
 
 ```python
 import json
-from topic_debate import DebateConfig, DebateSession
+from src.debate_platform import DebateConfig, DebateSession
 
 def run_debates_from_file(filename: str):
     """Run multiple debates from a JSON file."""
@@ -557,7 +508,7 @@ def run_debates_from_file(filename: str):
 ### Example 2: Configuration Template System
 
 ```python
-from topic_debate import DebateConfig
+from src.debate_platform import DebateConfig
 
 class DebateConfigTemplate:
     @staticmethod
@@ -565,13 +516,9 @@ class DebateConfigTemplate:
         """Quick 3-round debate configuration."""
         return DebateConfig(
             topic=topic,
-            organizer_name="Moderator",
             organizer_model="gpt-4",
-            supporter_name="Supporter",
             supporter_model="gpt-4",
-            opposer_name="Opposer",
             opposer_model="gpt-3.5-turbo",
-            judge_name="Judge",
             judge_model="gpt-4",
             num_rounds=3
         )
@@ -581,13 +528,9 @@ class DebateConfigTemplate:
         """Thorough 5-round debate with diverse models."""
         return DebateConfig(
             topic=topic,
-            organizer_name="Moderator",
             organizer_model="gpt-4",
-            supporter_name="Alice",
             supporter_model="claude-3-opus-20240229",
-            opposer_name="Bob",
             opposer_model="gemini-pro",
-            judge_name="Judge Panel",
             judge_model="gpt-4",
             num_rounds=5
         )
@@ -600,7 +543,7 @@ debate = DebateSession.from_config(config)
 ### Example 3: Configuration Validation with Detailed Feedback
 
 ```python
-from topic_debate import DebateConfig
+from src.debate_platform import DebateConfig
 
 def validate_and_report(config: DebateConfig) -> bool:
     """Validate config and provide detailed feedback."""
@@ -612,10 +555,10 @@ def validate_and_report(config: DebateConfig) -> bool:
 
     print(f"✅ Configuration Valid")
     print(f"   Topic: {config.topic}")
-    print(f"   Organizer: {config.organizer_name} ({config.organizer_model})")
-    print(f"   Supporter: {config.supporter_name} ({config.supporter_model})")
-    print(f"   Opposer: {config.opposer_name} ({config.opposer_model})")
-    print(f"   Judge: {config.judge_name} ({config.judge_model})")
+    print(f"   Organizer Model: {config.organizer_model}")
+    print(f"   Supporter Model: {config.supporter_model}")
+    print(f"   Opposer Model: {config.opposer_model}")
+    print(f"   Judge Model: {config.judge_model}")
     print(f"   Rounds: {config.num_rounds}")
     return True
 
@@ -624,60 +567,6 @@ config = DebateConfig(...)
 if validate_and_report(config):
     debate = DebateSession.from_config(config)
 ```
-
----
-
-## Migration Guide
-
-### Old Way: Manual Participant Creation
-
-```python
-from topic_debate import Organizer, Debater, Judge, DebateSession
-
-organizer = Organizer("Moderator", "gpt-4")
-supporter = Debater("Alice", "gpt-4", is_supporter=True)
-opposer = Debater("Bob", "claude-3-opus-20240229", is_supporter=False)
-judge = Judge("Judge", "gpt-4")
-
-debate = DebateSession(
-    topic="AI will improve employment",
-    organizer=organizer,
-    supporter=supporter,
-    opposer=opposer,
-    judge=judge
-)
-
-result = debate.run(num_rounds=3)
-```
-
-### New Way: Using DebateConfig
-
-```python
-from topic_debate import DebateConfig, DebateSession
-
-config = DebateConfig(
-    topic="AI will improve employment",
-    organizer_name="Moderator",
-    organizer_model="gpt-4",
-    supporter_name="Alice",
-    supporter_model="gpt-4",
-    opposer_name="Bob",
-    opposer_model="claude-3-opus-20240229",
-    judge_name="Judge",
-    judge_model="gpt-4",
-    num_rounds=3
-)
-
-debate = DebateSession.from_config(config)
-result = debate.run(num_rounds=config.num_rounds)
-```
-
-**Benefits**:
-- Cleaner code
-- Easier to validate
-- Easy to serialize/deserialize
-- Configuration can be reused
-- Better for integration
 
 ---
 
@@ -725,7 +614,7 @@ result = debate.run(num_rounds=config.num_rounds)
 
 The `DebateConfig` class provides a structured, reusable way to:
 
-✅ **Define debate configurations** with all required parameters
+✅ **Define debate configurations** with topic and LLM models
 ✅ **Validate configurations** before creating debates
 ✅ **Serialize/deserialize** configurations to/from JSON
 ✅ **Create DebateSession** instances easily
@@ -736,6 +625,6 @@ This makes the platform more flexible, maintainable, and suitable for automation
 
 ---
 
-**Version**: 1.0
-**Added**: November 24, 2025
+**Version**: 2.0
+**Updated**: November 24, 2025
 **Status**: Production Ready

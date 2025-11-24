@@ -84,7 +84,7 @@ def display_argument(argument) -> None:
 
 def display_score(score) -> None:
     """Display a single score."""
-    with st.expander(f"**{score.debater_name}** - Score: {score.overall_score:.1f}/10"):
+    with st.expander(f"**{score.debater_role.title()}** - Score: {score.overall_score:.1f}/10"):
         # Main metrics
         col1, col2, col3, col4, col5 = st.columns(5)
 
@@ -116,7 +116,8 @@ def display_debate_result(result: DebateResult) -> None:
 
     # Winner announcement
     if result.winner:
-        st.success(f"🏆 **Winner: {result.winner}** with score {[s.overall_score for s in result.scores if s.debater_name == result.winner][0]:.1f}/10")
+        winner_score = [s.overall_score for s in result.scores if s.debater_role == result.winner][0]
+        st.success(f"🏆 **Winner: {result.winner.title()}** with score {winner_score:.1f}/10")
     else:
         st.info("⚖️ **Debate Result: TIE** - Both debaters presented equally compelling arguments")
 

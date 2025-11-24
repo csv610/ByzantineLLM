@@ -47,15 +47,15 @@ class Judge(Participant):
         scores = []
         debater_arguments = {}
 
-        # Group arguments by debater
+        # Group arguments by role (supporter/opposer)
         for arg in arguments:
             if arg.participant_role in ["supporter", "opposer"]:
-                if arg.participant_name not in debater_arguments:
-                    debater_arguments[arg.participant_name] = []
-                debater_arguments[arg.participant_name].append(arg)
+                if arg.participant_role not in debater_arguments:
+                    debater_arguments[arg.participant_role] = []
+                debater_arguments[arg.participant_role].append(arg)
 
         # Score each debater
-        for debater_name, arguments_list in debater_arguments.items():
+        for debater_role, arguments_list in debater_arguments.items():
             arguments_text = "\n".join([
                 f"Round {arg.round_number}:\n{arg.content}"
                 for arg in arguments_list
@@ -64,7 +64,7 @@ class Judge(Participant):
             prompt = f"""You are an expert debate judge evaluating arguments in an academic debate.
 
 Topic: {topic}
-Debater: {debater_name}
+Debater Role: {debater_role}
 
 DEBATER'S ARGUMENTS:
 {arguments_text}
@@ -112,7 +112,7 @@ Provide a JSON response with the following structure:
 
 Response:"""
 
-            logger.info(f"{self.name} scoring {debater_name}")
+            logger.info(f"{self.name} scoring {debater_role}")
             response = self.generate_response(prompt, max_tokens=500)
 
             try:
@@ -124,8 +124,11 @@ Response:"""
                 valid_points_acknowledged = 0
                 weaknesses_identified = 0
 
+                # Get the opponent role
+                opponent_role = "opposer" if debater_role == "supporter" else "supporter"
+
                 for other_arg in arguments:
-                    if other_arg.participant_role in ["supporter", "opposer"] and other_arg.participant_name != debater_name:
+                    if other_arg.participant_role == opponent_role:
                         # Count how many times THIS debater was acknowledged as valid
                         if other_arg.acknowledged_valid_points:
                             valid_points_acknowledged += len(other_arg.acknowledged_valid_points)
@@ -140,7 +143,7 @@ Response:"""
                 adjusted_score = min(10.0, max(0.0, overall_score + bonus - penalty))
 
                 logger.info(
-                    f"{debater_name}: base={overall_score:.1f}, bonus={bonus:.1f}, penalty={penalty:.1f}, final={adjusted_score:.1f}"
+                    f"{debater_role}: base={overall_score:.1f}, bonus={bonus:.1f}, penalty={penalty:.1f}, final={adjusted_score:.1f}"
                 )
 
                 feedback = score_data.get("feedback", "")
@@ -152,7 +155,7 @@ Response:"""
                         feedback += f"\n- Opponent identified {weaknesses_identified} weakness/weaknesses in your argument: -{penalty:.1f} points"
 
                 scores.append(Score(
-                    debater_name=debater_name,
+                    debater_role=debater_role,
                     argument_quality=score_data.get("argument_quality", 0),
                     evidence_quality=score_data.get("evidence_quality", 0),
                     logical_consistency=score_data.get("logical_consistency", 0),
@@ -163,9 +166,9 @@ Response:"""
                     irrefutable_arguments=score_data.get("irrefutable_arguments", 0)
                 ))
             except json.JSONDecodeError:
-                logger.warning(f"Failed to parse judge response for {debater_name}")
+                logger.warning(f"Failed to parse judge response for {debater_role}")
                 scores.append(Score(
-                    debater_name=debater_name,
+                    debater_role=debater_role,
                     argument_quality=0,
                     evidence_quality=0,
                     logical_consistency=0,

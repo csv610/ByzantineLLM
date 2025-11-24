@@ -33,7 +33,7 @@ class Argument:
 @dataclass
 class Score:
     """Score breakdown for a single debater."""
-    debater_name: str
+    debater_role: str  # "supporter" or "opposer"
     argument_quality: float
     evidence_quality: float
     logical_consistency: float
@@ -49,7 +49,7 @@ class Score:
 
     def __str__(self) -> str:
         """String representation."""
-        return f"{self.debater_name}: {self.overall_score:.1f}/10 ({self.fact_count} facts, {self.irrefutable_arguments} backed arguments)"
+        return f"{self.debater_role}: {self.overall_score:.1f}/10 ({self.fact_count} facts, {self.irrefutable_arguments} backed arguments)"
 
 
 @dataclass

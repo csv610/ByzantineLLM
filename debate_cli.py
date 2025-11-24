@@ -84,7 +84,7 @@ def print_argument(argument) -> None:
 
 def print_score(score) -> None:
     """Print a score."""
-    print(f"\n📊 {score.debater_name}")
+    print(f"\n📊 {score.debater_role.title()}")
     print(f"  {'─'*76}")
     print(f"  Argument Quality:       {score.argument_quality:5.1f}/10")
     print(f"  Evidence Quality (40%): {score.evidence_quality:5.1f}/10  ⭐ CRITICAL")
@@ -220,9 +220,9 @@ def display_result(result: DebateResult) -> None:
     # Winner
     print_section("Final Result")
     if result.winner:
-        scores_dict = {s.debater_name: s.overall_score for s in result.scores}
+        scores_dict = {s.debater_role: s.overall_score for s in result.scores}
         winner_score = scores_dict[result.winner]
-        print(f"🏆 WINNER: {result.winner}")
+        print(f"🏆 WINNER: {result.winner.title()}")
         print(f"   Score: {winner_score:.1f}/10")
     else:
         print("⚖️  RESULT: TIE")

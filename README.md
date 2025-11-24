@@ -222,7 +222,7 @@ Complete documentation is available in the `docs/` folder:
 - `identified_weaknesses`: Weaknesses identified in opponent (dynamic scoring)
 
 ### Score
-- `debater_name`: Name of evaluated debater
+- `debater_role`: Role of evaluated debater ("supporter" or "opposer")
 - `argument_quality`: 0-10 rating
 - `evidence_quality`: 0-10 rating (weighted 40% of overall score)
 - `logical_consistency`: 0-10 rating

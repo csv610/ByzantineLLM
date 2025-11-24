@@ -318,7 +318,7 @@ class DebateSession:
             scores: List of scores
 
         Returns:
-            Winner name or None if tie
+            Winner role (supporter/opposer) or None if tie
         """
         if len(scores) < 2:
             return None
@@ -326,7 +326,7 @@ class DebateSession:
         scores_sorted = sorted(scores, key=lambda s: s.overall_score, reverse=True)
 
         if scores_sorted[0].overall_score > scores_sorted[1].overall_score:
-            return scores_sorted[0].debater_name
+            return scores_sorted[0].debater_role
         else:
             return None  # Tie
 

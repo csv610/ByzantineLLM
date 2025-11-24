@@ -53,13 +53,9 @@ logger = logging.getLogger(__name__)
 class DebateConfig:
     """Configuration for a debate session."""
     topic: str                          # The debate topic
-    organizer_name: str                 # Name of organizer
     organizer_model: str                # LLM model for organizer
-    supporter_name: str                 # Name of supporter
     supporter_model: str                # LLM model for supporter
-    opposer_name: str                   # Name of opposer
     opposer_model: str                  # LLM model for opposer
-    judge_name: str                     # Name of judge
     judge_model: str                    # LLM model for judge
     num_rounds: int = 3                 # Number of debate rounds (1-10)
 
@@ -79,10 +75,6 @@ class DebateConfig:
 
         if self.num_rounds < 1 or self.num_rounds > 10:
             return False, "Number of rounds must be between 1 and 10"
-
-        for name in [self.organizer_name, self.supporter_name, self.opposer_name, self.judge_name]:
-            if not name or not name.strip():
-                return False, "All participant names must be provided"
 
         for model in [self.organizer_model, self.supporter_model, self.opposer_model, self.judge_model]:
             if not model or not model.strip():
@@ -116,7 +108,7 @@ class Argument:
 @dataclass
 class Score:
     """Score breakdown for a single debater."""
-    debater_name: str
+    debater_role: str  # "supporter" or "opposer"
     argument_quality: float
     evidence_quality: float
     logical_consistency: float
@@ -132,7 +124,7 @@ class Score:
 
     def __str__(self) -> str:
         """String representation."""
-        return f"{self.debater_name}: {self.overall_score:.1f}/10 ({self.fact_count} facts, {self.irrefutable_arguments} backed arguments)"
+        return f"{self.debater_role}: {self.overall_score:.1f}/10 ({self.fact_count} facts, {self.irrefutable_arguments} backed arguments)"
 
 
 @dataclass
@@ -713,15 +705,15 @@ class Judge(Participant):
         scores = []
         debater_arguments = {}
 
-        # Group arguments by debater
+        # Group arguments by role (supporter/opposer)
         for arg in arguments:
             if arg.participant_role in ["supporter", "opposer"]:
-                if arg.participant_name not in debater_arguments:
-                    debater_arguments[arg.participant_name] = []
-                debater_arguments[arg.participant_name].append(arg)
+                if arg.participant_role not in debater_arguments:
+                    debater_arguments[arg.participant_role] = []
+                debater_arguments[arg.participant_role].append(arg)
 
         # Score each debater
-        for debater_name, arguments_list in debater_arguments.items():
+        for debater_role, arguments_list in debater_arguments.items():
             arguments_text = "\n".join([
                 f"Round {arg.round_number}:\n{arg.content}"
                 for arg in arguments_list
@@ -730,7 +722,7 @@ class Judge(Participant):
             prompt = f"""You are an expert debate judge evaluating arguments in an academic debate.
 
 Topic: {topic}
-Debater: {debater_name}
+Debater Role: {debater_role}
 
 DEBATER'S ARGUMENTS:
 {arguments_text}
@@ -778,7 +770,7 @@ Provide a JSON response with the following structure:
 
 Response:"""
 
-            logger.info(f"{self.name} scoring {debater_name}")
+            logger.info(f"{self.name} scoring {debater_role}")
             response = self.generate_response(prompt, max_tokens=500)
 
             try:
@@ -790,8 +782,11 @@ Response:"""
                 valid_points_acknowledged = 0
                 weaknesses_identified = 0
 
+                # Get the opponent role
+                opponent_role = "opposer" if debater_role == "supporter" else "supporter"
+
                 for other_arg in self.arguments:
-                    if other_arg.participant_role in ["supporter", "opposer"] and other_arg.participant_name != debater_name:
+                    if other_arg.participant_role == opponent_role:
                         # Count how many times THIS debater was acknowledged as valid
                         if other_arg.acknowledged_valid_points:
                             valid_points_acknowledged += len(other_arg.acknowledged_valid_points)
@@ -806,7 +801,7 @@ Response:"""
                 adjusted_score = min(10.0, max(0.0, overall_score + bonus - penalty))
 
                 logger.info(
-                    f"{debater_name}: base={overall_score:.1f}, bonus={bonus:.1f}, penalty={penalty:.1f}, final={adjusted_score:.1f}"
+                    f"{debater_role}: base={overall_score:.1f}, bonus={bonus:.1f}, penalty={penalty:.1f}, final={adjusted_score:.1f}"
                 )
 
                 feedback = score_data.get("feedback", "")
@@ -818,7 +813,7 @@ Response:"""
                         feedback += f"\n- Opponent identified {weaknesses_identified} weakness/weaknesses in your argument: -{penalty:.1f} points"
 
                 scores.append(Score(
-                    debater_name=debater_name,
+                    debater_role=debater_role,
                     argument_quality=score_data.get("argument_quality", 0),
                     evidence_quality=score_data.get("evidence_quality", 0),
                     logical_consistency=score_data.get("logical_consistency", 0),
@@ -829,9 +824,9 @@ Response:"""
                     irrefutable_arguments=score_data.get("irrefutable_arguments", 0)
                 ))
             except json.JSONDecodeError:
-                logger.warning(f"Failed to parse judge response for {debater_name}")
+                logger.warning(f"Failed to parse judge response for {debater_role}")
                 scores.append(Score(
-                    debater_name=debater_name,
+                    debater_role=debater_role,
                     argument_quality=0,
                     evidence_quality=0,
                     logical_consistency=0,
@@ -895,10 +890,10 @@ class DebateSession:
         if not is_valid:
             raise ValueError(f"Invalid debate configuration: {error_msg}")
 
-        organizer = Organizer(config.organizer_name, config.organizer_model)
-        supporter = Debater(config.supporter_name, config.supporter_model, is_supporter=True)
-        opposer = Debater(config.opposer_name, config.opposer_model, is_supporter=False)
-        judge = Judge(config.judge_name, config.judge_model)
+        organizer = Organizer("Organizer", config.organizer_model)
+        supporter = Debater("Supporter", config.supporter_model, is_supporter=True)
+        opposer = Debater("Opposer", config.opposer_model, is_supporter=False)
+        judge = Judge("Judge", config.judge_model)
 
         logger.info(f"Created DebateSession from config: {config.topic}")
         return cls(

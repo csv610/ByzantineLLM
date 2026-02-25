@@ -21,12 +21,16 @@ class ConsensusSession:
         self,
         topic: str,
         nodes: List[Node],
-        validator: Validator
+        validator: Validator,
+        system_prompt: str = "You are a participant in an objective consensus session. Provide a high-quality, comprehensive, and factual answer.",
+        user_prompt_template: str = "{topic}"
     ):
         """Initialize consensus session."""
         self.topic = topic
         self.nodes = nodes
         self.validator = validator
+        self.system_prompt = system_prompt
+        self.user_prompt_template = user_prompt_template
         self.proposals: List[Proposal] = []
         self.rankings: Dict[str, NodeEvaluation] = {}
 
@@ -38,10 +42,16 @@ class ConsensusSession:
         nodes = []
         for i, model in enumerate(validated_config.node_models):
             name = f"Node-{i+1}"
-            nodes.append(Node(name, model))
+            nodes.append(Node(name, model, temperature=validated_config.temperature))
         
         validator = Validator("The Judge", validated_config.judge_model)
-        return cls(topic=validated_config.topic, nodes=nodes, validator=validator)
+        return cls(
+            topic=validated_config.topic, 
+            nodes=nodes, 
+            validator=validator,
+            system_prompt=validated_config.system_prompt,
+            user_prompt_template=validated_config.user_prompt_template
+        )
 
     def run(self) -> ConsensusResult:
         """
@@ -53,13 +63,12 @@ class ConsensusSession:
         # Step 2: Generate Answers
         print("\n[Step 2] Nodes are generating their responses...")
         
-        # Standardized system prompt for ALL nodes
-        system_prompt = "You are a participant in an objective consensus session. Provide a high-quality, comprehensive, and factual answer."
+        user_prompt = self.user_prompt_template.format(topic=self.topic)
         
         real_name_to_content = {}
         for node in self.nodes:
             # Step 2: Every model receives the SAME system and user prompt
-            content = node.generate_proposal(self.topic, system_prompt=system_prompt)
+            content = node.generate_proposal(user_prompt, system_prompt=self.system_prompt)
             self.proposals.append(Proposal(
                 participant_name=node.name,
                 participant_role=node.get_role(),

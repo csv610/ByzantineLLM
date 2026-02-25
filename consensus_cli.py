@@ -25,6 +25,11 @@ async def run_consensus_cli():
     parser.add_argument("--node-model", type=str, default="gpt-4o-mini", help="Default LLM for nodes")
     parser.add_argument("--judge-model", type=str, default="gpt-4o-mini", help="LLM for the Judge")
     parser.add_argument("--n", type=int, default=3, help="Number of nodes to initialize (if using default model)")
+    parser.add_argument("--temperature", type=float, help="Sampling temperature for all nodes (0.0 to 2.0)")
+
+    # Prompt overrides
+    parser.add_argument("--system-prompt", type=str, help="Override default system prompt")
+    parser.add_argument("--user-prompt-template", type=str, help="Override default user prompt template (must include {topic})")
     
     # Config/Output
     parser.add_argument("--config", type=str, help="Path to a JSON configuration file")
@@ -48,11 +53,20 @@ async def run_consensus_cli():
         
         node_models = [args.node_model] * args.n
         
-        config = ConsensusConfig(
-            topic=args.topic,
-            node_models=node_models,
-            judge_model=args.judge_model
-        )
+        config_args = {
+            "topic": args.topic,
+            "node_models": node_models,
+            "judge_model": args.judge_model
+        }
+        
+        if args.system_prompt:
+            config_args["system_prompt"] = args.system_prompt
+        if args.user_prompt_template:
+            config_args["user_prompt_template"] = args.user_prompt_template
+        if args.temperature is not None:
+            config_args["temperature"] = args.temperature
+            
+        config = ConsensusConfig(**config_args)
 
     # Initialize and run session
     try:

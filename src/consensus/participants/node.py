@@ -13,8 +13,9 @@ logger = logging.getLogger(__name__)
 class Node(Participant):
     """Generates answers and ranks all participants' responses independently."""
 
-    def __init__(self, name: str, model: str):
+    def __init__(self, name: str, model: str, temperature: float = 0.7):
         super().__init__(name, model)
+        self.temperature = temperature
         self.proposal_history: List[str] = []
 
     def get_role(self) -> str:
@@ -23,22 +24,15 @@ class Node(Participant):
     def add_own_proposal(self, content: str, round_number: int) -> None:
         self.proposal_history.append(content)
 
-    def generate_proposal(self, topic: str, system_prompt: Optional[str] = None) -> str:
+    def generate_proposal(self, user_prompt: str, system_prompt: Optional[str] = None) -> str:
         """Step 2: Generate answer to the question using standardized prompts."""
         
-        # Default system prompt if none provided
-        if not system_prompt:
-            system_prompt = "You are a participant in an objective consensus session. Provide a high-quality, comprehensive, and factual answer."
+        # Use provided system prompt or default
+        system_prompt = system_prompt or "You are a participant in an objective consensus session. Provide a high-quality, comprehensive, and factual answer."
 
-        # User prompt is exactly the topic
-        user_prompt = topic
-
-        logger.info(f"{self.name} generating proposal with standardized prompts...")
+        logger.info(f"{self.name} generating proposal...")
         
-        # We need to modify the base class generate_response to support system prompts properly
-        # or handle it here by constructing a combined prompt or using a message list.
-        # Since base.py uses litellm with a single 'user' message currently, I'll update it there too.
-        return self.generate_response_with_system(system_prompt, user_prompt, max_tokens=1000)
+        return self.generate_response_with_system(system_prompt, user_prompt, max_tokens=1000, temperature=self.temperature)
 
     def rank_proposals(self, topic: str, all_proposals: Dict[str, str]) -> NodeEvaluation:
         """Step 3: Evaluate and rank ALL N responses anonymously."""

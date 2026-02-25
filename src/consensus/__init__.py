@@ -2,7 +2,7 @@
 
 from .engine import ConsensusSession
 from .models import ConsensusConfig, Proposal, ConsensusResult, NodeEvaluation
-from .participants import Node, Validator
+from .participants import Node, Judge
 
 __all__ = [
     "ConsensusSession",
@@ -11,5 +11,5 @@ __all__ = [
     "ConsensusResult",
     "NodeEvaluation",
     "Node",
-    "Validator",
+    "Judge",
 ]

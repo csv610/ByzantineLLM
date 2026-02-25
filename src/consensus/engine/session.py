@@ -6,9 +6,9 @@ from typing import List, Dict
 import string
 
 from ..models import ConsensusConfig, Proposal, ConsensusResult, NodeEvaluation
-from ..participants import Node, Validator
+from ..participants import Node, Judge
 
-# Note: Keeping the Validator class name as it represents the role, 
+# Note: Keeping the Judge class name as it represents the role, 
 # but updating the config field reference.
 
 logger = logging.getLogger(__name__)
@@ -21,14 +21,14 @@ class ConsensusSession:
         self,
         topic: str,
         nodes: List[Node],
-        validator: Validator,
+        judge: Judge,
         system_prompt: str = "You are a participant in an objective consensus session. Provide a high-quality, comprehensive, and factual answer.",
         user_prompt_template: str = "{topic}"
     ):
         """Initialize consensus session."""
         self.topic = topic
         self.nodes = nodes
-        self.validator = validator
+        self.judge = judge
         self.system_prompt = system_prompt
         self.user_prompt_template = user_prompt_template
         self.proposals: List[Proposal] = []
@@ -44,11 +44,11 @@ class ConsensusSession:
             name = f"Node-{i+1}"
             nodes.append(Node(name, model, temperature=validated_config.temperature))
         
-        validator = Validator("The Judge", validated_config.judge_model)
+        judge = Judge("The Judge", validated_config.judge_model)
         return cls(
             topic=validated_config.topic, 
             nodes=nodes, 
-            validator=validator,
+            judge=judge,
             system_prompt=validated_config.system_prompt,
             user_prompt_template=validated_config.user_prompt_template
         )
@@ -101,7 +101,7 @@ class ConsensusSession:
         for node_name, eval_obj in anon_rankings.items():
             judge_anon_rankings[evaluator_real_to_anon[node_name]] = eval_obj
 
-        verdict_data = self.validator.determine_verdict(self.topic, anon_proposals, judge_anon_rankings)
+        verdict_data = self.judge.determine_verdict(self.topic, anon_proposals, judge_anon_rankings)
         
         # De-anonymize
         anon_winner = verdict_data["final_ranking"][0] if verdict_data["final_ranking"] else "None"

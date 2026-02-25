@@ -2,10 +2,10 @@
 
 from .base import Participant
 from .node import Node
-from .validator import Validator
+from .judge import Judge
 
 __all__ = [
     "Participant",
     "Node",
-    "Validator",
+    "Judge",
 ]

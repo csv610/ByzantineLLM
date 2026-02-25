@@ -1,4 +1,4 @@
-"""Validator (Judge) for blind Byzantine Consensus."""
+"""Judge for blind Byzantine Consensus."""
 
 import logging
 from typing import List, Dict
@@ -10,7 +10,7 @@ from ..models.entities import NodeEvaluation
 logger = logging.getLogger(__name__)
 
 
-class Validator(Participant):
+class Judge(Participant):
     """The Judge who analyzes the blind NxN matrix to discover the verified consensus."""
 
     def get_role(self) -> str:

@@ -53,10 +53,14 @@ async def run_consensus_cli():
         temperature=args.temperature
     )
 
-    # 4. Run Consensus
+    # 3. Run Consensus
     try:
         result = engine.run(args.topic)
         
+        print("\n📊 Participant Scores:")
+        for name, score in result.final_scores.items():
+            print(f"  - {name}: {score}/10")
+            
         if args.output:
             with open(args.output, 'w') as f:
                 json.dump(result.model_dump(), f, indent=2)

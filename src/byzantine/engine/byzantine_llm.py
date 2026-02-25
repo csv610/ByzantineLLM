@@ -92,16 +92,22 @@ class ByzantineLLM:
         verdict_data = self.judge.determine_verdict(question, anon_proposals, judge_anon_rankings)
         
         # De-anonymize results
-        anon_winner = verdict_data["final_ranking"][0] if verdict_data["final_ranking"] else "None"
+        anon_winner = verdict_data.get("final_ranking", ["None"])[0]
         real_winner = anon_to_real.get(anon_winner, anon_winner)
+        
+        # De-anonymize scores
+        real_scores = {}
+        for anon_name, score in verdict_data.get("scores", {}).items():
+            real_name = anon_to_real.get(anon_name, anon_name)
+            real_scores[real_name] = float(score)
         
         result = ConsensusResult(
             topic=question,
             proposals=proposals,
             ranking_matrix={node_name: eval_obj.rankings for node_name, eval_obj in anon_rankings.items()},
-            final_scores={}, 
+            final_scores=real_scores, 
             winner=real_winner,
-            final_response=verdict_data["final_response"],
+            final_response=verdict_data.get("final_response", "No response generated."),
             timestamp=datetime.now().isoformat(),
             participants={n.name: n.get_role() for n in self.nodes}
         )

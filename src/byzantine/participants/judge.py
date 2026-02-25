@@ -50,14 +50,19 @@ Task:
 1. Identify the consensus winner(s) based on the aggregate rankings.
 2. Detect "Byzantine" behavior: Look for outliers in the ranking table (e.g., participants who rank generally accepted "best" answers very low, or who promote low-quality answers).
 3. Determine the final aggregate ranking of the participants.
-4. Based on the content of the highest-ranked winner, write the FINAL, authoritative answer to the original question.
+4. Assign a numerical score (0.0 to 10.0) to each participant based on their ranking and content quality.
+5. Based on the content of the highest-ranked winner, write the FINAL, authoritative answer to the original question.
 
 Return ONLY a valid JSON object with this structure:
-{{
+{
     "final_ranking": ["Winner Name", "Runner Up", ...],
+    "scores": {
+        "Participant Name": 9.5,
+        "Another Participant": 7.0
+    },
     "byzantine_detection": "Analysis of any detected adversarial or inconsistent behavior.",
     "final_response": "The authoritative response based on the winner's content."
-}}
+}
 """
         logger.info("Judge is analyzing the blind NxN matrix for Byzantine behavior...")
         response = self.generate_response(prompt, max_tokens=3000, temperature=0.1)

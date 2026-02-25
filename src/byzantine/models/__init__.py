@@ -1,6 +1,6 @@
 """Configuration and data models for consensus."""
 
-from .config import ConsensusConfig
+from .config import ConsensusConfig, ByzantineModelsConfig
 from .entities import (
     Proposal, 
     ConsensusResult,
@@ -9,6 +9,7 @@ from .entities import (
 
 __all__ = [
     "ConsensusConfig",
+    "ByzantineModelsConfig",
     "Proposal",
     "ConsensusResult",
     "NodeEvaluation",

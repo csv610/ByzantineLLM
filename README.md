@@ -127,7 +127,7 @@ python consensus_cli.py \
 ## 💻 Python API
 
 ```python
-from src.consensus import ConsensusConfig, ConsensusSession
+from src.byzantine import ConsensusConfig, ConsensusSession
 
 config = ConsensusConfig(
     topic="What is the safest way to store private keys?",

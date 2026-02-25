@@ -1,0 +1,10 @@
+{
+  "topic": "What are the most effective strategies for mitigating climate change in urban environments over the next decade?",
+  "node_models": [
+    "gpt-4o-mini",
+    "claude-3-haiku-20240307",
+    "gpt-4o-mini",
+    "gemini-1.5-flash"
+  ],
+  "judge_model": "gpt-4o"
+}

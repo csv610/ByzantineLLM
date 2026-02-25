@@ -226,23 +226,35 @@ def main():
 
         organizer_model = st.text_input(
             "Organizer's Model",
-            value="gpt-4",
-            help="Examples: gpt-4, claude-3-opus-20240229, ollama/llama2"
+            value="ollama/gemma3:latest",
+            help="Examples: gpt-4o, claude-3-opus-20240229, ollama/llama2"
         )
 
         supporter_model = st.text_input(
             "Supporter's Model",
-            value="gpt-4"
+            value="ollama/gemma3:latest"
+        )
+
+        supporter_persona = st.text_area(
+            "Supporter's Persona",
+            value="An expert in the field with a positive outlook on the topic.",
+            help="Describe the expert perspective this debater should take."
         )
 
         opposer_model = st.text_input(
             "Opposer's Model",
-            value="gpt-4"
+            value="ollama/gemma3:latest"
+        )
+
+        opposer_persona = st.text_area(
+            "Opposer's Persona",
+            value="A critical analyst focusing on risks and potential downsides.",
+            help="Describe the expert perspective this debater should take."
         )
 
         judge_model = st.text_input(
             "Judge's Model",
-            value="gpt-4"
+            value="ollama/gemma3:latest"
         )
 
         st.subheader("📊 Debate Settings")
@@ -269,20 +281,18 @@ def main():
             else:
                 st.session_state.debate_running = True
 
-                # Initialize participants with default names
-                organizer = Organizer("Organizer", organizer_model)
-                supporter = Debater("Supporter", supporter_model, is_supporter=True)
-                opposer = Debater("Opposer", opposer_model, is_supporter=False)
-                judge = Judge("Judge", judge_model)
-
                 # Create debate session
-                debate = DebateSession(
+                config = DebateConfig(
                     topic=topic,
-                    organizer=organizer,
-                    supporter=supporter,
-                    opposer=opposer,
-                    judge=judge
+                    organizer_model=organizer_model,
+                    supporter_model=supporter_model,
+                    supporter_persona=supporter_persona,
+                    opposer_model=opposer_model,
+                    opposer_persona=opposer_persona,
+                    judge_model=judge_model,
+                    num_rounds=num_rounds
                 )
+                debate = DebateSession.from_config(config)
 
                 # Run debate with progress indicator
                 progress_bar = st.progress(0)

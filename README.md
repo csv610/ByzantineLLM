@@ -54,57 +54,14 @@ sequenceDiagram
 
 ---
 
-## 🛡️ The Zero-Trust Analysis Loop
-
-The framework moves from decentralized generation to centralized verification through rigorous cross-auditing and statistical discovery.
-
-```mermaid
-graph TD
-    Start((Broadcast Question)) --> N1P[Phase 2: Node 1 Proposal]
-    Start --> N2P[Phase 2: Node 2 Proposal]
-    Start --> NiP[Phase 2: Node N Proposal]
-
-    subgraph "Independent Generation"
-    N1P
-    N2P
-    NiP
-    end
-
-    N1P --> Anon{Anonymity Layer}
-    N2P --> Anon
-    NiP --> Anon
-
-    subgraph "Phase 3 & 4: Blind Ranking Matrix"
-    Anon --> |All N| N1R[Node 1 Ranks All]
-    Anon --> |All N| N2R[Node 2 Ranks All]
-    Anon --> |All N| NiR[Node N Ranks All]
-    N1R --> Matrix[NxN Ranking Table]
-    N2R --> Matrix
-    NiR --> Matrix
-    end
-
-    subgraph "Phase 5 & 6: Judge's Finality"
-    Matrix --> Analysis[Byzantine Discovery]
-    Analysis --> Synthesis[Authoritative Response]
-    end
-
-    Synthesis --> Output((Verified Response))
-
-    style Anon fill:#bbf,stroke:#333,stroke-dasharray: 5 5
-    style N1P fill:#fff,stroke:#333
-    style N2P fill:#fff,stroke:#333
-    style NiP fill:#fff,stroke:#333
-```
-
----
-
 ## 🚀 Key Features
 
 *   **Zero-Knowledge Protocol:** No node is pre-assigned a "Byzantine" role. Malicious behavior is discovered, not declared.
 *   **Total Anonymity:** Participants cannot see model names or node identities during evaluation, ensuring purely content-based auditing.
-*   **Consistency Protocol:** Every node receives the exact same system and user prompts to ensure absolute objectivity and a level playing field.
+*   **PromptBuilder Architecture:** Highly extensible system for constructing dynamic system and user prompts (supporting RAG, custom personas, etc.).
+*   **Numerical Scoring:** Every participant is assigned a score (0-10) based on their consensus ranking and content quality.
 *   **Self-Healing Consensus:** The protocol is designed to isolate low-quality or adversarial contributions through peer-to-peer disagreement analysis.
-*   **Heterogeneous Evaluation:** Mix high-capability and low-capability models to test how the "Byzantine" effect naturally emerges from model limitations.
+*   **Heterogeneous Evaluation:** Mix high-capability and low-capability models to test how the "Byzantine" effect naturally emerges.
 
 ---
 
@@ -115,11 +72,13 @@ graph TD
 pip install -r requirements.txt
 ```
 
-### Run a Consensus Session
+### Run via CLI
 ```bash
 python consensus_cli.py \
   --topic "Explain the core mechanism of Byzantine Fault Tolerance." \
-  --n 4
+  --n 3 \
+  --node-model "gpt-4o-mini" \
+  --judge-model "gpt-4o"
 ```
 
 ---
@@ -127,20 +86,38 @@ python consensus_cli.py \
 ## 💻 Python API
 
 ```python
-from src.byzantine import ConsensusConfig, ConsensusSession
+from src.byzantine import ByzantineLLM, ByzantineModelsConfig, PromptBuilder
 
-config = ConsensusConfig(
-    topic="What is the safest way to store private keys?",
-    node_models=["gpt-4o-mini", "claude-3-haiku", "gpt-4o-mini"],
+# 1. Configure the network
+models = ByzantineModelsConfig(
+    node_models=["gpt-4o-mini", "claude-3-haiku", "gemini-1.5-flash"],
     judge_model="gpt-4o"
 )
 
-session = ConsensusSession.from_config(config)
-result = session.run()
+# 2. (Optional) Customize prompts
+builder = PromptBuilder(
+    system_prompt="You are a senior distributed systems engineer.",
+    user_template="Explain this for a technical audience: {topic}"
+)
 
-print(f"Consensus Winner: {result.winner}")
-print(f"Final Response: {result.final_response}")
+# 3. Initialize and run the engine
+engine = ByzantineLLM(models, prompt_builder=builder, temperature=0.5)
+result = engine.run("What is Byzantine Fault Tolerance?")
+
+print(f"Winner: {result.winner}")
+print(f"Scores: {result.final_scores}")
+print(f"Verified Answer: {result.final_response}")
 ```
+
+---
+
+## 📜 Examples
+Check the `examples/` directory for more detailed scenarios:
+- `01_basic_consensus.py`: Simple entry point.
+- `02_custom_prompts.py`: Using custom system/user templates.
+- `03_temperature_control.py`: Stable vs. Creative modes.
+- `04_using_config_file.py`: Loading from JSON dictionaries.
+- `05_custom_builder.py`: Subclassing `PromptBuilder` for dynamic logic.
 
 ---
 

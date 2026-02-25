@@ -56,16 +56,16 @@ sequenceDiagram
 
 ## 📊 Technical Complexity
 
-The framework is designed for high-integrity consensus, which involves a multi-stage communication protocol. The total number of LLM calls scales linearly with the number of participants ($N$):
+The framework is designed for high-integrity consensus, balancing auditing depth with API efficiency. While the **logical discovery matrix** scales quadratically ($N^2$), the number of **API calls** remains linear ($O(N)$) through batch ranking:
 
-| Phase | Calls | Description |
-| :--- | :--- | :--- |
-| **Generation** | $N$ | Each node generates an independent proposal. |
-| **Audit** | $N$ | Each node cross-evaluates all $N$ anonymous proposals. |
-| **Judgment** | $1$ | The Judge synthesizes the final result from the $N \times N$ matrix. |
-| **Total** | **$2N + 1$** | Total API calls per consensus session. |
+| Phase | API Calls | Peer Evaluations | Description |
+| :--- | :--- | :--- | :--- |
+| **Generation** | $N$ | - | Each node generates an independent proposal. |
+| **Audit** | $N$ | $N^2$ | Each node ranks the entire set of $N$ proposals in a single batch call. |
+| **Judgment** | $1$ | $N$ | The Judge synthesizes the final $N \times N$ ranking matrix. |
+| **Total** | **$2N + 1$** | **$N^2 + N$** | **Linear API cost / Quadratic discovery depth.** |
 
-> **Note on Token Scaling:** While the number of *calls* is linear ($O(N)$), the *input token volume* for the Audit and Judgment phases scales quadratically ($O(N^2)$) as each evaluator must process the proposals of all peers.
+> **Note on Efficiency:** By batching the Audit phase into $N$ calls rather than $N^2$, we allow the models to perform *relative ranking*, which is significantly more effective at identifying quality outliers than isolated rating. However, as noted in the research section, the **input token volume** still scales quadratically ($O(N^2)$).
 
 ---
 

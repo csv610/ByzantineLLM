@@ -66,6 +66,13 @@ class DebateTermination(BaseModel):
         return f"Debate {'terminated' if self.terminated else 'completed'}: {self.reason} at Round {self.round_number}"
 
 
+class ReflectiveAnalysis(BaseModel):
+    """Debater's reflection on the session."""
+    learned: List[str] = Field(default_factory=list, description="What was learned from the opponent")
+    weaknesses: List[str] = Field(default_factory=list, description="Self-identified weaknesses in arguments")
+    corrections: List[str] = Field(default_factory=list, description="How those weaknesses were corrected")
+
+
 class DebateResult(BaseModel):
     """Complete result of a debate session."""
     topic: str
@@ -76,6 +83,8 @@ class DebateResult(BaseModel):
     num_rounds: int
     participants: Dict[str, str]  # {name: role}
     termination: Optional[DebateTermination] = None  # Why debate ended
+    participant_summaries: Optional[Dict[str, str]] = None  # {name: summary}
+    reflective_analysis: Optional[Dict[str, ReflectiveAnalysis]] = None  # {name: analysis}
 
     def to_dict(self) -> Dict:
         """Convert to dictionary for serialization."""

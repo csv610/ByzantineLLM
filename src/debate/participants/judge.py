@@ -112,20 +112,18 @@ SCORING METHODOLOGY:
 - Unsubstantiated claims lower scores significantly
 - Calculate overall_score as: (evidence_quality × 0.4) + (argument_quality × 0.2) + (logical_consistency × 0.2) + (responsiveness_to_gaps × 0.2)
 
-Provide a JSON response with the following structure:
+Return ONLY a valid JSON object (no markdown, no extra text) with this exact structure:
 {{
     "debater_role": "{debater_role}",
-    "argument_quality": <number 0-10>,
-    "evidence_quality": <number 0-10>,
-    "logical_consistency": <number 0-10>,
-    "responsiveness_to_gaps": <number 0-10>,
-    "overall_score": <number 0-10>,
-    "fact_count": <number of citations/facts found>,
-    "irrefutable_arguments": <count of arguments supported by evidence>,
-    "feedback": "<detailed feedback focusing on facts and evidence>"
-}}
-
-Response:"""
+    "argument_quality": 8,
+    "evidence_quality": 8,
+    "logical_consistency": 8,
+    "responsiveness_to_gaps": 8,
+    "overall_score": 8,
+    "fact_count": 5,
+    "irrefutable_arguments": 4,
+    "feedback": "detailed feedback focusing on facts and evidence"
+}}"""
 
         logger.info(f"{self.name} evaluating base score for {debater_role}")
         response = self.generate_response(prompt, max_tokens=500, response_format=Score)

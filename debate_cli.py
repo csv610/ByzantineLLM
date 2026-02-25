@@ -11,6 +11,7 @@ Usage:
 """
 
 import argparse
+import json
 import sys
 from pathlib import Path
 from typing import Dict, Any
@@ -32,19 +33,19 @@ from src.debate import (
 DEFAULT_CONFIG = {
     "organizer": {
         "name": "Moderator",
-        "model": "gpt-4"
+        "model": "ollama/gemma3"
     },
     "supporter": {
         "name": "Debater A",
-        "model": "gpt-4"
+        "model": "ollama/gemma3"
     },
     "opposer": {
         "name": "Debater B",
-        "model": "gpt-4"
+        "model": "ollama/gemma3"
     },
     "judge": {
         "name": "Judge",
-        "model": "gpt-4"
+        "model": "ollama/gemma3"
     },
     "num_rounds": 3
 }
@@ -100,6 +101,43 @@ def print_score(score) -> None:
             print(f"    {line}")
 
 
+def print_reflection(name: str, summary: str, reflection) -> None:
+    """Print participant summary and reflection."""
+    print(f"\n👤 Participant: {name}")
+    print(f"  {'─'*76}")
+    print(f"  📝 FINAL SUMMARY:")
+    for line in summary.split('\n'):
+        if line.strip():
+            print(f"    {line}")
+    
+    if reflection:
+        print(f"\n  🧠 REFLECTIVE ANALYSIS:")
+        
+        # Learned
+        print(f"     💡 Learned from opponent:")
+        if reflection.learned:
+            for item in reflection.learned:
+                print(f"        • {item}")
+        else:
+            print(f"        (No specific learning points identified)")
+        
+        # Weaknesses
+        print(f"\n     📉 Self-identified weaknesses:")
+        if reflection.weaknesses:
+            for item in reflection.weaknesses:
+                print(f"        • {item}")
+        else:
+            print(f"        (No weaknesses identified)")
+        
+        # Corrections
+        print(f"\n     🛠️  Corrections made:")
+        if reflection.corrections:
+            for item in reflection.corrections:
+                print(f"        • {item}")
+        else:
+            print(f"        (No corrections needed)")
+
+
 def load_config(config_path: str) -> Dict[str, Any]:
     """Load configuration from JSON file."""
     try:
@@ -133,7 +171,9 @@ def run_debate_from_args(args) -> DebateResult:
             "topic": args.topic or "",
             "organizer_model": args.organizer_model or DEFAULT_CONFIG["organizer"]["model"],
             "supporter_model": args.supporter_model or DEFAULT_CONFIG["supporter"]["model"],
+            "supporter_persona": args.supporter_persona,
             "opposer_model": args.opposer_model or DEFAULT_CONFIG["opposer"]["model"],
+            "opposer_persona": args.opposer_persona,
             "judge_model": args.judge_model or DEFAULT_CONFIG["judge"]["model"],
             "num_rounds": args.rounds or DEFAULT_CONFIG["num_rounds"]
         }
@@ -181,6 +221,15 @@ def display_result(result: DebateResult) -> None:
 
     for score in result.scores:
         print_score(score)
+
+    # Participant Summaries and Reflections
+    if result.participant_summaries or result.reflective_analysis:
+        print_section("Participant Summaries & Reflections")
+        for name in result.participants:
+            if result.participants[name] in ["supporter", "opposer"]:
+                summary = result.participant_summaries.get(name, "No summary available")
+                reflection = result.reflective_analysis.get(name) if result.reflective_analysis else None
+                print_reflection(name, summary, reflection)
 
     # Winner
     print_section("Final Result")
@@ -273,8 +322,16 @@ Examples:
         help="Model for supporter (e.g., gpt-3.5-turbo)"
     )
     parser.add_argument(
+        "--supporter-persona",
+        help="Expert persona for the supporter"
+    )
+    parser.add_argument(
         "--opposer-model",
         help="Model for opposer (e.g., claude-3-opus-20240229)"
+    )
+    parser.add_argument(
+        "--opposer-persona",
+        help="Expert persona for the opposer"
     )
     parser.add_argument(
         "--judge-model",

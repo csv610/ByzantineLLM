@@ -54,8 +54,18 @@ class DebateSession:
         validated_config = DebateConfig.model_validate(config)
 
         organizer = Organizer("Organizer", validated_config.organizer_model)
-        supporter = Debater("Supporter", validated_config.supporter_model, is_supporter=True)
-        opposer = Debater("Opposer", validated_config.opposer_model, is_supporter=False)
+        supporter = Debater(
+            "Supporter", 
+            validated_config.supporter_model, 
+            is_supporter=True, 
+            persona=validated_config.supporter_persona
+        )
+        opposer = Debater(
+            "Opposer", 
+            validated_config.opposer_model, 
+            is_supporter=False, 
+            persona=validated_config.opposer_persona
+        )
         judge = Judge("Judge", validated_config.judge_model)
 
         logger.info(f"Created DebateSession from config: {validated_config.topic}")
@@ -77,21 +87,42 @@ class DebateSession:
         Returns:
             DebateResult containing all arguments and scores
         """
+        print(f"\n🚀 Starting debate on: '{self.topic}'")
+        print(f"📅 Rounds: {num_rounds}")
         logger.info(f"Starting debate on '{self.topic}' with {num_rounds} rounds")
 
         # Round 0: Organizer overview
+        print("\n🎤 Organizer is preparing the topic overview...")
         self._run_organizer_round()
+        print("✅ Overview completed.")
 
         # Rounds 1-N: Debate rounds
         termination = None
         for round_num in range(1, num_rounds + 1):
+            print(f"\n🔔 Round {round_num} of {num_rounds}...")
             termination = self._run_debate_round(round_num)
             if termination and termination.terminated:
+                print(f"⚠️ Debate terminated early: {termination.reason}")
                 logger.info(f"Debate terminated: {termination.reason}")
                 break
 
         # Final: Judge evaluation
+        print("\n⚖️ Judge is evaluating the debate...")
         scores = self._run_judge_evaluation()
+        print("✅ Evaluation completed.")
+
+        # Final Summaries and Reflection
+        print("\n📝 Generating participant summaries and reflections...")
+        participant_summaries = {
+            self.supporter.name: self.supporter.generate_summary(self.topic),
+            self.opposer.name: self.opposer.generate_summary(self.topic)
+        }
+        
+        reflective_analysis = {
+            self.supporter.name: self.supporter.generate_reflective_analysis(self.topic),
+            self.opposer.name: self.opposer.generate_reflective_analysis(self.topic)
+        }
+        print("✅ Summaries and reflections generated.")
 
         # Determine winner
         winner = self._determine_winner(scores)
@@ -111,17 +142,20 @@ class DebateSession:
             scores=scores,
             winner=winner,
             timestamp=datetime.now().isoformat(),
-            num_rounds=len(self.arguments) - 1,  # Excluding organizer round
+            num_rounds=num_rounds,  # Use actual requested rounds
             participants={
                 self.organizer.name: self.organizer.get_role(),
                 self.supporter.name: self.supporter.get_role(),
                 self.opposer.name: self.opposer.get_role(),
                 self.judge.name: self.judge.get_role()
             },
-            termination=termination
+            termination=termination,
+            participant_summaries=participant_summaries,
+            reflective_analysis=reflective_analysis
         )
 
         logger.info(f"Debate completed. Winner: {winner}. Termination: {termination.reason}")
+        print(f"\n🏆 Debate Finished! Winner: {winner if winner else 'Tie'}")
         return result
 
     def _run_organizer_round(self) -> None:

@@ -129,8 +129,7 @@ Response:"""
 
         logger.info(f"{self.name} evaluating base score for {debater_role}")
         response = self.generate_response(prompt, max_tokens=500, response_format=Score)
-        cleaned_response = self._clean_json_response(response)
-        return Score.model_validate_json(cleaned_response)
+        return Score.model_validate_json(response)
 
     def _apply_dynamic_adjustments(self, base_score: Score, debater_role: str, all_arguments: List[Argument]) -> Score:
         """Apply bonuses and penalties based on acknowledgments and identified weaknesses."""

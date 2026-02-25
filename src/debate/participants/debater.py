@@ -229,8 +229,7 @@ Focus only on the latest argument's new weaknesses. Response:"""
         response = self.generate_response(prompt, max_tokens=800, response_format=GapAnalysis)
 
         try:
-            cleaned_response = self._clean_json_response(response)
-            analysis = GapAnalysis.model_validate_json(cleaned_response)
+            analysis = GapAnalysis.model_validate_json(response)
             return analysis.all_weaknesses()[:5]
         except Exception as e:
             logger.warning(f"Failed to parse gap analysis for {self.name}: {str(e)}")
@@ -289,8 +288,7 @@ Be objective and strict. Response:"""
 
         try:
             response = self.generate_response(prompt, max_tokens=500, response_format=ValidationResult)
-            cleaned_response = self._clean_json_response(response)
-            validation = ValidationResult.model_validate_json(cleaned_response)
+            validation = ValidationResult.model_validate_json(response)
 
             # Argument is valid if:
             # - Has strong novelty OR
@@ -359,8 +357,7 @@ Response:"""
         response = self.generate_response(prompt, max_tokens=800, response_format=OpponentEvaluation)
 
         try:
-            cleaned_response = self._clean_json_response(response)
-            eval_result = OpponentEvaluation.model_validate_json(cleaned_response)
+            eval_result = OpponentEvaluation.model_validate_json(response)
             
             # Filter and limit
             valid_points = [p for p in eval_result.acknowledged_valid_points if p.strip()][:3]

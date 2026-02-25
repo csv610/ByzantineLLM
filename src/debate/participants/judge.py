@@ -1,6 +1,5 @@
 """Judge participant for debate platform."""
 
-import json
 import logging
 from typing import List
 
@@ -22,7 +21,6 @@ class Judge(Participant):
             model: LLM model identifier
         """
         super().__init__(name, model)
-        self.arguments: List[Argument] = []
 
     def get_role(self) -> str:
         """Return role."""
@@ -56,12 +54,28 @@ class Judge(Participant):
 
         # Score each debater
         for debater_role, arguments_list in debater_arguments.items():
-            arguments_text = "\n".join([
-                f"Round {arg.round_number}:\n{arg.content}"
-                for arg in arguments_list
-            ])
+            try:
+                # 1. Get base score from LLM
+                score_data = self._get_base_score(topic, debater_role, arguments_list)
+                
+                # 2. Apply dynamic adjustments based on debate dynamics
+                score = self._apply_dynamic_adjustments(score_data, debater_role, arguments)
+                scores.append(score)
+                
+            except Exception as e:
+                logger.warning(f"Failed to score {debater_role}: {str(e)}")
+                scores.append(self._get_error_score(debater_role))
 
-            prompt = f"""You are an expert debate judge evaluating arguments in an academic debate.
+        return scores
+
+    def _get_base_score(self, topic: str, debater_role: str, arguments_list: List[Argument]) -> Score:
+        """Request base score evaluation from LLM."""
+        arguments_text = "\n".join([
+            f"Round {arg.round_number}:\n{arg.content}"
+            for arg in arguments_list
+        ])
+
+        prompt = f"""You are an expert debate judge evaluating arguments in an academic debate.
 
 Topic: {topic}
 Debater Role: {debater_role}
@@ -100,6 +114,7 @@ SCORING METHODOLOGY:
 
 Provide a JSON response with the following structure:
 {{
+    "debater_role": "{debater_role}",
     "argument_quality": <number 0-10>,
     "evidence_quality": <number 0-10>,
     "logical_consistency": <number 0-10>,
@@ -112,71 +127,63 @@ Provide a JSON response with the following structure:
 
 Response:"""
 
-            logger.info(f"{self.name} scoring {debater_role}")
-            response = self.generate_response(prompt, max_tokens=500)
+        logger.info(f"{self.name} evaluating base score for {debater_role}")
+        response = self.generate_response(prompt, max_tokens=500, response_format=Score)
+        cleaned_response = self._clean_json_response(response)
+        return Score.model_validate_json(cleaned_response)
 
-            try:
-                score_data = json.loads(response)
-                overall_score = score_data.get("overall_score", 0)
+    def _apply_dynamic_adjustments(self, base_score: Score, debater_role: str, all_arguments: List[Argument]) -> Score:
+        """Apply bonuses and penalties based on acknowledgments and identified weaknesses."""
+        overall_score = base_score.overall_score
+        valid_points_acknowledged = 0
+        weaknesses_identified = 0
 
-                # Apply score adjustments based on debate dynamics
-                # Count valid points acknowledged in other debater's arguments
-                valid_points_acknowledged = 0
-                weaknesses_identified = 0
+        # Get the opponent role
+        opponent_role = "opposer" if debater_role == "supporter" else "supporter"
 
-                # Get the opponent role
-                opponent_role = "opposer" if debater_role == "supporter" else "supporter"
+        for arg in all_arguments:
+            if arg.participant_role == opponent_role:
+                # Count how many times THIS debater was acknowledged as valid by opponent
+                if arg.acknowledged_valid_points:
+                    valid_points_acknowledged += len(arg.acknowledged_valid_points)
+                # Count weaknesses identified IN THIS DEBATER'S arguments by opponent
+                if arg.identified_weaknesses:
+                    weaknesses_identified += len(arg.identified_weaknesses)
 
-                for other_arg in arguments:
-                    if other_arg.participant_role == opponent_role:
-                        # Count how many times THIS debater was acknowledged as valid
-                        if other_arg.acknowledged_valid_points:
-                            valid_points_acknowledged += len(other_arg.acknowledged_valid_points)
-                        # Count weaknesses identified IN THIS DEBATER'S arguments
-                        if other_arg.identified_weaknesses:
-                            weaknesses_identified += len(other_arg.identified_weaknesses)
+        # Apply adjustments
+        bonus = valid_points_acknowledged * 0.15  # +0.15 per valid point acknowledged
+        penalty = weaknesses_identified * 0.10    # -0.10 per weakness identified
 
-                # Apply adjustments
-                bonus = valid_points_acknowledged * 0.15  # +0.15 per valid point acknowledged
-                penalty = weaknesses_identified * 0.10  # -0.10 per weakness identified
+        adjusted_score = min(10.0, max(0.0, overall_score + bonus - penalty))
+        
+        logger.info(
+            f"{debater_role}: base={overall_score:.1f}, bonus={bonus:.1f}, penalty={penalty:.1f}, final={adjusted_score:.1f}"
+        )
 
-                adjusted_score = min(10.0, max(0.0, overall_score + bonus - penalty))
+        feedback = base_score.feedback
+        if bonus > 0 or penalty > 0:
+            feedback += f"\n\nDYNAMIC SCORING ADJUSTMENTS:"
+            if valid_points_acknowledged > 0:
+                feedback += f"\n+ Opponent acknowledged {valid_points_acknowledged} valid point(s) in your argument: +{bonus:.1f} points"
+            if weaknesses_identified > 0:
+                feedback += f"\n- Opponent identified {weaknesses_identified} weakness/weaknesses in your argument: -{penalty:.1f} points"
 
-                logger.info(
-                    f"{debater_role}: base={overall_score:.1f}, bonus={bonus:.1f}, penalty={penalty:.1f}, final={adjusted_score:.1f}"
-                )
+        # Update and return a new Score object with adjusted values
+        return base_score.model_copy(update={
+            "overall_score": adjusted_score,
+            "feedback": feedback
+        })
 
-                feedback = score_data.get("feedback", "")
-                if bonus > 0 or penalty > 0:
-                    feedback += f"\n\nDYNAMIC SCORING ADJUSTMENTS:"
-                    if valid_points_acknowledged > 0:
-                        feedback += f"\n+ Opponent acknowledged {valid_points_acknowledged} valid point(s) in your argument: +{bonus:.1f} points"
-                    if weaknesses_identified > 0:
-                        feedback += f"\n- Opponent identified {weaknesses_identified} weakness/weaknesses in your argument: -{penalty:.1f} points"
-
-                scores.append(Score(
-                    debater_role=debater_role,
-                    argument_quality=score_data.get("argument_quality", 0),
-                    evidence_quality=score_data.get("evidence_quality", 0),
-                    logical_consistency=score_data.get("logical_consistency", 0),
-                    responsiveness_to_gaps=score_data.get("responsiveness_to_gaps", 0),
-                    overall_score=adjusted_score,
-                    feedback=feedback,
-                    fact_count=score_data.get("fact_count", 0),
-                    irrefutable_arguments=score_data.get("irrefutable_arguments", 0)
-                ))
-            except json.JSONDecodeError:
-                logger.warning(f"Failed to parse judge response for {debater_role}")
-                scores.append(Score(
-                    debater_role=debater_role,
-                    argument_quality=0,
-                    evidence_quality=0,
-                    logical_consistency=0,
-                    responsiveness_to_gaps=0,
-                    overall_score=0,
-                    feedback="Error parsing response",
-                    fact_count=0,
-                    irrefutable_arguments=0
-                ))
-
-        return scores
+    def _get_error_score(self, debater_role: str) -> Score:
+        """Return a default score in case of evaluation failure."""
+        return Score(
+            debater_role=debater_role,
+            argument_quality=0,
+            evidence_quality=0,
+            logical_consistency=0,
+            responsiveness_to_gaps=0,
+            overall_score=0,
+            feedback="Error during evaluation process.",
+            fact_count=0,
+            irrefutable_arguments=0
+        )

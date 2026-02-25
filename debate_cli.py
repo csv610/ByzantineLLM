@@ -11,7 +11,6 @@ Usage:
 """
 
 import argparse
-import json
 import sys
 from pathlib import Path
 from typing import Dict, Any
@@ -124,74 +123,40 @@ def save_config(config: Dict[str, Any], output_path: str) -> None:
 def run_debate_from_args(args) -> DebateResult:
     """Run debate using command-line arguments."""
 
-    # Load or build configuration
+    # Load or build configuration dictionary
     if args.config:
-        config = load_config(args.config)
+        config_dict = load_config(args.config)
     else:
-        config = DEFAULT_CONFIG.copy()
-
-    # Override with command-line arguments
-    if args.topic:
-        config["topic"] = args.topic
-    if args.organizer_model:
-        config["organizer"]["model"] = args.organizer_model
-    if args.supporter_model:
-        config["supporter"]["model"] = args.supporter_model
-    if args.opposer_model:
-        config["opposer"]["model"] = args.opposer_model
-    if args.judge_model:
-        config["judge"]["model"] = args.judge_model
-    if args.rounds:
-        config["num_rounds"] = args.rounds
-
-    # Validate
-    if "topic" not in config or not config["topic"]:
-        print("❌ Error: Topic is required (--topic or config file)")
-        sys.exit(1)
-
-    # Create participants
-    organizer = Organizer(
-        config["organizer"]["name"],
-        config["organizer"]["model"]
-    )
-    supporter = Debater(
-        config["supporter"]["name"],
-        config["supporter"]["model"],
-        is_supporter=True
-    )
-    opposer = Debater(
-        config["opposer"]["name"],
-        config["opposer"]["model"],
-        is_supporter=False
-    )
-    judge = Judge(
-        config["judge"]["name"],
-        config["judge"]["model"]
-    )
-
-    # Create and run debate
-    print_header(f"STARTING DEBATE: {config['topic']}")
-
-    print("Participants:")
-    print(f"  🎤 Organizer: {organizer.name} ({organizer.model})")
-    print(f"  ✓ Supporter: {supporter.name} ({supporter.model})")
-    print(f"  ✗ Opposer: {opposer.name} ({opposer.model})")
-    print(f"  🏛️  Judge: {judge.name} ({judge.model})")
-    print(f"\nRounds: {config['num_rounds']}")
-
-    debate = DebateSession(
-        topic=config["topic"],
-        organizer=organizer,
-        supporter=supporter,
-        opposer=opposer,
-        judge=judge
-    )
+        # Map flat DEFAULT_CONFIG to expected DebateConfig structure if needed
+        # but here we'll just build it directly to match DebateConfig
+        config_dict = {
+            "topic": args.topic or "",
+            "organizer_model": args.organizer_model or DEFAULT_CONFIG["organizer"]["model"],
+            "supporter_model": args.supporter_model or DEFAULT_CONFIG["supporter"]["model"],
+            "opposer_model": args.opposer_model or DEFAULT_CONFIG["opposer"]["model"],
+            "judge_model": args.judge_model or DEFAULT_CONFIG["judge"]["model"],
+            "num_rounds": args.rounds or DEFAULT_CONFIG["num_rounds"]
+        }
 
     try:
-        result = debate.run(num_rounds=config["num_rounds"])
+        # Validate using Pydantic
+        config = DebateConfig.model_validate(config_dict)
+        
+        # Create and run debate
+        print_header(f"STARTING DEBATE: {config.topic}")
+
+        print("Participants:")
+        print(f"  🎤 Organizer Model: {config.organizer_model}")
+        print(f"  ✓ Supporter Model: {config.supporter_model}")
+        print(f"  ✗ Opposer Model: {config.opposer_model}")
+        print(f"  🏛️  Judge Model: {config.judge_model}")
+        print(f"\nRounds: {config.num_rounds}")
+
+        debate = DebateSession.from_config(config)
+        result = debate.run(num_rounds=config.num_rounds)
         return result
     except Exception as e:
-        print(f"\n❌ Error during debate: {str(e)}")
+        print(f"\n❌ Error: {str(e)}")
         sys.exit(1)
 
 

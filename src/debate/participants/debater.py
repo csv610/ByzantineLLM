@@ -1,10 +1,10 @@
 """Debater participant for debate platform."""
 
-import json
 import logging
 from typing import Dict, List, Optional, Tuple
 
 from .base import Participant
+from ..models.entities import GapAnalysis, ValidationResult, OpponentEvaluation
 
 logger = logging.getLogger(__name__)
 
@@ -226,19 +226,14 @@ Provide a JSON response with the following structure:
 Focus only on the latest argument's new weaknesses. Response:"""
 
         logger.debug(f"{self.name} analyzing opponent arguments")
-        response = self.generate_response(prompt, max_tokens=800)
+        response = self.generate_response(prompt, max_tokens=800, response_format=GapAnalysis)
 
         try:
-            analysis = json.loads(response)
-            gaps = (
-                analysis.get("gaps", []) +
-                analysis.get("inconsistencies", []) +
-                analysis.get("logical_fallacies", [])
-            )
-            gaps = [g for g in gaps if g.strip()]
-            return gaps[:5]
-        except json.JSONDecodeError:
-            logger.warning(f"Failed to parse gap analysis JSON for {self.name}")
+            cleaned_response = self._clean_json_response(response)
+            analysis = GapAnalysis.model_validate_json(cleaned_response)
+            return analysis.all_weaknesses()[:5]
+        except Exception as e:
+            logger.warning(f"Failed to parse gap analysis for {self.name}: {str(e)}")
             return []
 
     def validate_argument_quality(self, topic: str, current_argument: str) -> Tuple[bool, str]:
@@ -293,32 +288,26 @@ Return JSON:
 Be objective and strict. Response:"""
 
         try:
-            response = self.generate_response(prompt, max_tokens=500)
-            validation = json.loads(response)
-
-            has_new_info = validation.get("has_new_information", False)
-            strong_novelty = validation.get("has_strong_novelty", False)
-            refutes = validation.get("refutes_opponent", False)
-            avoids_rep = validation.get("avoids_repetition", True)
+            response = self.generate_response(prompt, max_tokens=500, response_format=ValidationResult)
+            cleaned_response = self._clean_json_response(response)
+            validation = ValidationResult.model_validate_json(cleaned_response)
 
             # Argument is valid if:
             # - Has strong novelty OR
             # - Successfully refutes opponent AND has some new info OR
             # - Has new info that's not repetitive
             is_substantive = (
-                strong_novelty or
-                (refutes and has_new_info) or
-                (has_new_info and avoids_rep)
+                validation.has_strong_novelty or
+                (validation.refutes_opponent and validation.has_new_information) or
+                (validation.has_new_information and validation.avoids_repetition)
             )
 
-            reason = validation.get("reason", "Validation failed")
+            logger.info(f"{self.name} argument validation: {is_substantive} - {validation.reason}")
+            return is_substantive, validation.reason
 
-            logger.info(f"{self.name} argument validation: {is_substantive} - {reason}")
-            return is_substantive, reason
-
-        except json.JSONDecodeError:
-            logger.warning(f"Failed to parse validation JSON for {self.name}")
-            return False, "Validation parsing error"
+        except Exception as e:
+            logger.warning(f"Failed to parse validation for {self.name}: {str(e)}")
+            return False, f"Validation parsing error: {str(e)}"
 
     def evaluate_opponent_argument(self, topic: str, opponent_argument: str) -> Tuple[List[str], List[str]]:
         """
@@ -367,19 +356,18 @@ Be objective - even if you disagree, identify genuinely valid points. This impro
 Response:"""
 
         logger.debug(f"{self.name} evaluating opponent argument for valid points and weaknesses")
-        response = self.generate_response(prompt, max_tokens=800)
+        response = self.generate_response(prompt, max_tokens=800, response_format=OpponentEvaluation)
 
         try:
-            analysis = json.loads(response)
-            valid_points = analysis.get("acknowledged_valid_points", [])
-            weaknesses = analysis.get("identified_weaknesses", [])
-
+            cleaned_response = self._clean_json_response(response)
+            eval_result = OpponentEvaluation.model_validate_json(cleaned_response)
+            
             # Filter and limit
-            valid_points = [p for p in valid_points if p.strip()][:3]
-            weaknesses = [w for w in weaknesses if w.strip()][:3]
+            valid_points = [p for p in eval_result.acknowledged_valid_points if p.strip()][:3]
+            weaknesses = [w for w in eval_result.identified_weaknesses if w.strip()][:3]
 
             logger.info(f"{self.name} found {len(valid_points)} valid points and {len(weaknesses)} weaknesses")
             return valid_points, weaknesses
-        except json.JSONDecodeError:
-            logger.warning(f"Failed to parse evaluation JSON for {self.name}")
+        except Exception as e:
+            logger.warning(f"Failed to parse evaluation for {self.name}: {str(e)}")
             return [], []

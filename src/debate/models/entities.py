@@ -1,15 +1,13 @@
 """Data entity models for debate arguments, scores, and results."""
 
-import json
 import logging
-from dataclasses import dataclass, asdict
 from typing import List, Dict, Optional
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class Argument:
+class Argument(BaseModel):
     """Represents a single argument in the debate."""
     round_number: int
     participant_name: str
@@ -23,37 +21,35 @@ class Argument:
 
     def to_dict(self) -> Dict:
         """Convert to dictionary."""
-        return asdict(self)
+        return self.model_dump()
 
     def __str__(self) -> str:
         """String representation."""
         return f"{self.participant_name} (Round {self.round_number}): {self.content[:100]}..."
 
 
-@dataclass
-class Score:
+class Score(BaseModel):
     """Score breakdown for a single debater."""
     debater_role: str  # "supporter" or "opposer"
-    argument_quality: float
-    evidence_quality: float
-    logical_consistency: float
-    responsiveness_to_gaps: float
-    overall_score: float
+    argument_quality: float = Field(ge=0, le=10)
+    evidence_quality: float = Field(ge=0, le=10)
+    logical_consistency: float = Field(ge=0, le=10)
+    responsiveness_to_gaps: float = Field(ge=0, le=10)
+    overall_score: float = Field(ge=0, le=10)
     feedback: str
     fact_count: int = 0  # Number of facts/citations used
     irrefutable_arguments: int = 0  # Number of evidence-backed arguments
 
     def to_dict(self) -> Dict:
         """Convert to dictionary."""
-        return asdict(self)
+        return self.model_dump()
 
     def __str__(self) -> str:
         """String representation."""
         return f"{self.debater_role}: {self.overall_score:.1f}/10 ({self.fact_count} facts, {self.irrefutable_arguments} backed arguments)"
 
 
-@dataclass
-class DebateTermination:
+class DebateTermination(BaseModel):
     """Reason for debate termination."""
     terminated: bool
     reason: str  # "completed", "low_quality", "no_new_info", "no_refutation", "max_rounds"
@@ -63,20 +59,19 @@ class DebateTermination:
 
     def to_dict(self) -> Dict:
         """Convert to dictionary."""
-        return asdict(self)
+        return self.model_dump()
 
     def __str__(self) -> str:
         """String representation."""
         return f"Debate {'terminated' if self.terminated else 'completed'}: {self.reason} at Round {self.round_number}"
 
 
-@dataclass
-class DebateResult:
+class DebateResult(BaseModel):
     """Complete result of a debate session."""
     topic: str
     arguments: List[Argument]
     scores: List[Score]
-    winner: Optional[str]
+    winner: Optional[str] = None
     timestamp: str
     num_rounds: int
     participants: Dict[str, str]  # {name: role}
@@ -84,20 +79,11 @@ class DebateResult:
 
     def to_dict(self) -> Dict:
         """Convert to dictionary for serialization."""
-        return {
-            "topic": self.topic,
-            "arguments": [arg.to_dict() for arg in self.arguments],
-            "scores": [score.to_dict() for score in self.scores],
-            "winner": self.winner,
-            "timestamp": self.timestamp,
-            "num_rounds": self.num_rounds,
-            "participants": self.participants,
-            "termination": self.termination.to_dict() if self.termination else None
-        }
+        return self.model_dump()
 
     def to_json(self, indent: int = 2) -> str:
         """Convert to JSON string."""
-        return json.dumps(self.to_dict(), indent=indent)
+        return self.model_dump_json(indent=indent)
 
     def save(self, filepath: str) -> None:
         """Save debate result to JSON file."""
@@ -105,21 +91,37 @@ class DebateResult:
             f.write(self.to_json())
         logger.info(f"Debate result saved to {filepath}")
 
-    @staticmethod
-    def load(filepath: str) -> 'DebateResult':
+    @classmethod
+    def load(cls, filepath: str) -> 'DebateResult':
         """Load debate result from JSON file."""
         with open(filepath, 'r') as f:
-            data = json.load(f)
+            return cls.model_validate_json(f.read())
 
-        arguments = [Argument(**arg) for arg in data['arguments']]
-        scores = [Score(**score) for score in data['scores']]
 
-        return DebateResult(
-            topic=data['topic'],
-            arguments=arguments,
-            scores=scores,
-            winner=data['winner'],
-            timestamp=data['timestamp'],
-            num_rounds=data['num_rounds'],
-            participants=data['participants']
-        )
+class GapAnalysis(BaseModel):
+    """Result of opponent's argument analysis."""
+    gaps: List[str] = Field(default_factory=list)
+    inconsistencies: List[str] = Field(default_factory=list)
+    logical_fallacies: List[str] = Field(default_factory=list)
+    unsupported_claims: List[str] = Field(default_factory=list)
+
+    def all_weaknesses(self) -> List[str]:
+        """Return a combined list of all identified weaknesses."""
+        return self.gaps + self.inconsistencies + self.logical_fallacies
+
+
+class ValidationResult(BaseModel):
+    """Result of argument quality validation."""
+    has_new_information: bool
+    has_strong_novelty: bool
+    refutes_opponent: bool
+    avoids_repetition: bool
+    is_substantive: bool
+    reason: str
+    missing_elements: List[str] = Field(default_factory=list)
+
+
+class OpponentEvaluation(BaseModel):
+    """Debater's evaluation of opponent's points."""
+    acknowledged_valid_points: List[str] = Field(default_factory=list)
+    identified_weaknesses: List[str] = Field(default_factory=list)

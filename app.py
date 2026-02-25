@@ -17,7 +17,6 @@ from src.debate import (
     DebateConfig
 )
 from datetime import datetime
-import json
 
 # ============================================================================
 # PAGE CONFIGURATION

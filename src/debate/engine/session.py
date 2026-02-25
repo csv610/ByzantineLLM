@@ -2,7 +2,7 @@
 
 import logging
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from ..models import DebateConfig, Argument, Score, DebateTermination, DebateResult
 from ..participants import Organizer, Debater, Judge
@@ -48,22 +48,19 @@ class DebateSession:
 
         Returns:
             DebateSession instance ready to run
-
-        Raises:
-            ValueError: If configuration is invalid
         """
-        is_valid, error_msg = config.validate()
-        if not is_valid:
-            raise ValueError(f"Invalid debate configuration: {error_msg}")
+        # Pydantic handles validation automatically on instantiation of DebateConfig,
+        # but if we get a raw dict or unvalidated object, we can ensure it's valid here.
+        validated_config = DebateConfig.model_validate(config)
 
-        organizer = Organizer("Organizer", config.organizer_model)
-        supporter = Debater("Supporter", config.supporter_model, is_supporter=True)
-        opposer = Debater("Opposer", config.opposer_model, is_supporter=False)
-        judge = Judge("Judge", config.judge_model)
+        organizer = Organizer("Organizer", validated_config.organizer_model)
+        supporter = Debater("Supporter", validated_config.supporter_model, is_supporter=True)
+        opposer = Debater("Opposer", validated_config.opposer_model, is_supporter=False)
+        judge = Judge("Judge", validated_config.judge_model)
 
-        logger.info(f"Created DebateSession from config: {config.topic}")
+        logger.info(f"Created DebateSession from config: {validated_config.topic}")
         return cls(
-            topic=config.topic,
+            topic=validated_config.topic,
             organizer=organizer,
             supporter=supporter,
             opposer=opposer,
@@ -154,150 +151,122 @@ class DebateSession:
 
         is_initial = (round_num == 1)
 
-        # Calculate intermediate scores if not initial round
+        # 1. Calculate intermediate scores for strategic adaptation
+        supporter_score, opposer_score = self._get_intermediate_scores(round_num, is_initial)
+
+        # 2. Supporter's turn
+        termination = self._process_debater_turn(
+            self.supporter,
+            self.opposer,
+            round_num,
+            is_initial,
+            supporter_score,
+            opposer_score
+        )
+        if termination:
+            return termination
+
+        # 3. Opposer's turn
+        termination = self._process_debater_turn(
+            self.opposer,
+            self.supporter,
+            round_num,
+            is_initial,
+            opposer_score,
+            supporter_score
+        )
+        if termination:
+            return termination
+
+        return None
+
+    def _get_intermediate_scores(self, round_num: int, is_initial: bool) -> Tuple[Optional[float], Optional[float]]:
+        """Calculate intermediate scores if not initial round."""
         supporter_score = None
         opposer_score = None
+
         if not is_initial and round_num > 1:
             try:
                 intermediate_scores = self.judge.score_debate(self.topic, self.arguments)
                 for score in intermediate_scores:
-                    if score.debater_name == self.supporter.name:
+                    if score.debater_role == "supporter":
                         supporter_score = score.overall_score
-                    elif score.debater_name == self.opposer.name:
+                    elif score.debater_role == "opposer":
                         opposer_score = score.overall_score
-                logger.info(f"Intermediate scores - {self.supporter.name}: {supporter_score:.1f}, {self.opposer.name}: {opposer_score:.1f}")
+                logger.info(f"Intermediate scores - Supporter: {supporter_score:.1f}, Opposer: {opposer_score:.1f}")
             except Exception as e:
                 logger.warning(f"Could not calculate intermediate scores: {str(e)}")
 
-        # Supporter's turn
+        return supporter_score, opposer_score
+
+    def _process_debater_turn(
+        self,
+        debater: Debater,
+        opponent: Debater,
+        round_num: int,
+        is_initial: bool,
+        own_score: Optional[float],
+        opponent_score: Optional[float]
+    ) -> Optional[DebateTermination]:
+        """Process a single debater's turn including generation, validation, and storage."""
+        
+        # Generate argument
         if is_initial:
-            supporter_arg = self.supporter.generate_argument(
-                self.topic,
-                round_num,
-                is_initial=True
-            )
+            content = debater.generate_argument(self.topic, round_num, is_initial=True)
         else:
-            gaps = self.supporter.analyze_opponent_arguments(
-                self.topic,
-                [arg.content for arg in self.arguments if arg.participant_name == self.opposer.name]
-            )
-            supporter_arg = self.supporter.generate_argument(
+            content = debater.generate_argument(
                 self.topic,
                 round_num,
                 is_initial=False,
-                own_score=supporter_score,
-                opponent_score=opposer_score
+                own_score=own_score,
+                opponent_score=opponent_score
             )
 
-        # Validate supporter's argument quality
+        # Validate quality
         if not is_initial:
-            is_valid, validation_reason = self.supporter.validate_argument_quality(self.topic, supporter_arg)
+            is_valid, reason = debater.validate_argument_quality(self.topic, content)
             if not is_valid:
-                logger.warning(f"Supporter argument validation failed: {validation_reason}")
+                logger.warning(f"{debater.name} argument validation failed: {reason}")
                 return DebateTermination(
                     terminated=True,
                     reason="low_quality",
                     round_number=round_num,
-                    debater_name=self.supporter.name,
-                    message=validation_reason
+                    debater_name=debater.name,
+                    message=reason
                 )
-
-        # Store supporter's argument
-        self.supporter.add_own_argument(supporter_arg, round_num)
-        self.opposer.add_opponent_argument(supporter_arg, round_num)
 
         # Evaluate opponent's latest argument (if not initial)
-        acknowledged_valid = None
-        identified_weak = None
-        if not is_initial and self.arguments:
-            opponent_latest = [arg for arg in self.arguments if arg.participant_name == self.opposer.name]
-            if opponent_latest:
-                acknowledged_valid, identified_weak = self.supporter.evaluate_opponent_argument(
-                    self.topic,
-                    opponent_latest[-1].content
-                )
-
-        supporter_arg_obj = Argument(
-            round_number=round_num,
-            participant_name=self.supporter.name,
-            participant_role="supporter",
-            content=supporter_arg,
-            timestamp=datetime.now().isoformat(),
-            word_count=self.supporter.count_words(supporter_arg),
-            gaps_identified=self.supporter.analyze_opponent_arguments(
-                self.topic,
-                [arg.content for arg in self.arguments if arg.participant_name == self.opposer.name]
-            ) if not is_initial else None,
-            acknowledged_valid_points=acknowledged_valid,
-            identified_weaknesses=identified_weak
-        )
-        self.arguments.append(supporter_arg_obj)
-
-        # Opposer's turn
-        if is_initial:
-            opposer_arg = self.opposer.generate_argument(
-                self.topic,
-                round_num,
-                is_initial=True
-            )
-        else:
-            gaps = self.opposer.analyze_opponent_arguments(
-                self.topic,
-                [arg.content for arg in self.arguments if arg.participant_name == self.supporter.name]
-            )
-            opposer_arg = self.opposer.generate_argument(
-                self.topic,
-                round_num,
-                is_initial=False,
-                own_score=opposer_score,
-                opponent_score=supporter_score
-            )
-
-        # Validate opposer's argument quality
+        valid_points = None
+        weaknesses = None
         if not is_initial:
-            is_valid, validation_reason = self.opposer.validate_argument_quality(self.topic, opposer_arg)
-            if not is_valid:
-                logger.warning(f"Opposer argument validation failed: {validation_reason}")
-                return DebateTermination(
-                    terminated=True,
-                    reason="low_quality",
-                    round_number=round_num,
-                    debater_name=self.opposer.name,
-                    message=validation_reason
-                )
-
-        # Store opposer's argument
-        self.opposer.add_own_argument(opposer_arg, round_num)
-        self.supporter.add_opponent_argument(opposer_arg, round_num)
-
-        # Evaluate opponent's latest argument (if not initial)
-        acknowledged_valid_opp = None
-        identified_weak_opp = None
-        if not is_initial:
-            supporter_latest = [arg for arg in self.arguments if arg.participant_name == self.supporter.name]
-            if supporter_latest:
-                acknowledged_valid_opp, identified_weak_opp = self.opposer.evaluate_opponent_argument(
+            opponent_args = [arg for arg in self.arguments if arg.participant_role == opponent.get_role()]
+            if opponent_args:
+                valid_points, weaknesses = debater.evaluate_opponent_argument(
                     self.topic,
-                    supporter_latest[-1].content
+                    opponent_args[-1].content
                 )
 
-        opposer_arg_obj = Argument(
+        # Create and store argument object
+        arg_obj = Argument(
             round_number=round_num,
-            participant_name=self.opposer.name,
-            participant_role="opposer",
-            content=opposer_arg,
+            participant_name=debater.name,
+            participant_role=debater.get_role(),
+            content=content,
             timestamp=datetime.now().isoformat(),
-            word_count=self.opposer.count_words(opposer_arg),
-            gaps_identified=self.opposer.analyze_opponent_arguments(
+            word_count=debater.count_words(content),
+            gaps_identified=debater.analyze_opponent_arguments(
                 self.topic,
-                [arg.content for arg in self.arguments if arg.participant_name == self.supporter.name]
+                [arg.content for arg in self.arguments if arg.participant_role == opponent.get_role()]
             ) if not is_initial else None,
-            acknowledged_valid_points=acknowledged_valid_opp,
-            identified_weaknesses=identified_weak_opp
+            acknowledged_valid_points=valid_points,
+            identified_weaknesses=weaknesses
         )
-        self.arguments.append(opposer_arg_obj)
 
-        # Debate continues - no termination
+        # Update histories and session
+        debater.add_own_argument(content, round_num)
+        opponent.add_opponent_argument(content, round_num)
+        self.arguments.append(arg_obj)
+
         return None
 
     def _run_judge_evaluation(self) -> List[Score]:
@@ -329,39 +298,3 @@ class DebateSession:
             return scores_sorted[0].debater_role
         else:
             return None  # Tie
-
-    def get_arguments_by_participant(self, participant_name: str) -> List[Argument]:
-        """
-        Get all arguments by a specific participant.
-
-        Args:
-            participant_name: Name of participant
-
-        Returns:
-            List of arguments
-        """
-        return [arg for arg in self.arguments if arg.participant_name == participant_name]
-
-    def get_arguments_by_role(self, role: str) -> List[Argument]:
-        """
-        Get all arguments by a specific role.
-
-        Args:
-            role: Role name (organizer, supporter, opposer)
-
-        Returns:
-            List of arguments
-        """
-        return [arg for arg in self.arguments if arg.participant_role == role]
-
-    def get_round_arguments(self, round_num: int) -> List[Argument]:
-        """
-        Get all arguments from a specific round.
-
-        Args:
-            round_num: Round number
-
-        Returns:
-            List of arguments
-        """
-        return [arg for arg in self.arguments if arg.round_number == round_num]

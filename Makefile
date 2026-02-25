@@ -61,7 +61,7 @@ run-cli:
 run-api:
 	@echo "$(BLUE)AI Debate Platform - Python API Example$(NC)"
 	@echo ""
-	python -c "from src.debate_platform import DebateConfig, DebateSession; \
+	python -c "from src.debate import DebateConfig, DebateSession; \
 	config = DebateConfig( \
 	    topic='AI will improve employment', \
 	    organizer_model='gpt-4', \
@@ -81,12 +81,12 @@ test:
 
 lint:
 	@echo "$(BLUE)Running pylint...$(NC)"
-	-pylint app.py debate_cli.py src/debate_platform/
+	-pylint app.py debate_cli.py src/debate/
 	@echo "$(GREEN)✓ Lint check complete$(NC)"
 
 format:
 	@echo "$(BLUE)Formatting code with black...$(NC)"
-	black app.py debate_cli.py src/debate_platform/ --line-length 100
+	black app.py debate_cli.py src/debate/ --line-length 100
 	@echo "$(GREEN)✓ Code formatted$(NC)"
 
 clean:

@@ -140,51 +140,28 @@
 
 ## 💻 Python Source Code Files
 
-### ⚙️ topic_debate.py (920+ lines) - CORE ENGINE
-**Location**: Root directory
-**Purpose**: Pure business logic for debate orchestration
+### 📂 src/debate/ - CORE ENGINE
+**Location**: `src/debate/`
+**Purpose**: Modular business logic for debate orchestration
 **Status**: ✅ PRODUCTION READY
 
-**Sections**:
-1. **Imports & Logging** (lines 1-50)
-   - litellm for LLM abstraction
-   - Standard library imports
-   - Logging configuration
+**Components**:
+1. **Engine** (`src/debate/engine/`)
+   - `session.py`: `DebateSession` orchestrator
+   - Executes the complete debate flow
 
-2. **Data Models** (lines 55-170)
-   - `Argument` dataclass (round, participant, content, metadata)
-   - `Score` dataclass (5 criteria + feedback)
-   - `DebateResult` dataclass (complete debate state + serialization)
+2. **Models** (`src/debate/models/`)
+   - `config.py`: `DebateConfig` dataclass
+   - `entities.py`: `Argument`, `Score`, `DebateTermination`, and `DebateResult`
 
-3. **Participant Classes** (lines 176-490)
-   - `Participant` (ABC base class)
-     - `generate_response()`: LLM API call with error handling
-     - `count_words()`: Utility method
-
-   - `Organizer` (extends Participant)
-     - `generate_overview()`: 200-300 word neutral intro
-
-   - `Debater` (extends Participant)
-     - `generate_argument()`: Main argument generation with history
-     - `add_own_argument()`: History tracking
-     - `add_opponent_argument()`: Opponent tracking
-     - `analyze_opponent_arguments()`: Gap analysis
-     - `_build_history_summary()`: Format history for prompts
-
-   - `Judge` (extends Participant)
-     - `score_debate()`: Comprehensive scoring with JSON parsing
-
-4. **DebateSession** (lines 496-679)
-   - Main orchestrator class
-   - `run()`: Execute complete debate
-   - `_run_organizer_round()`: Round 0
-   - `_run_debate_round()`: Rounds 1-N
-   - `_run_judge_evaluation()`: Final scoring
-   - `_determine_winner()`: Winner logic
-   - Utility methods for filtering arguments
+3. **Participants** (`src/debate/participants/`)
+   - `base.py`: `Participant` base class with `litellm` integration
+   - `organizer.py`: Neutral overview generation
+   - `debater.py`: Argument generation and rebuttal logic
+   - `judge.py`: Evaluation and scoring
 
 **Key Features**:
-- ✅ Modular design
+- ✅ Modular design (Package-based)
 - ✅ Comprehensive error handling
 - ✅ Full type hints
 - ✅ Extensive docstrings
@@ -194,7 +171,13 @@
 
 **How to Use**:
 ```python
-from topic_debate import *
+from src.debate import (
+    Organizer,
+    Debater,
+    Judge,
+    DebateSession,
+    DebateConfig
+)
 
 debate = DebateSession(
     topic="AI will improve employment",
@@ -252,64 +235,28 @@ Then:
 
 ---
 
-### 📦 sl_debate.py (530 lines) - LEGACY COMBINED VERSION
-**Location**: Root directory
-**Purpose**: Original implementation combining core + UI
-**Status**: ⚠️ MAINTAINED FOR COMPATIBILITY
-
-**Contents**:
-- All functionality from topic_debate.py
-- All functionality from app.py
-- Combined into single monolithic file
-
-**When to Use**:
-- For backward compatibility
-- Single-file deployments
-- When core + UI separation not needed
-
-**Migration Path**:
-- New code should use topic_debate.py + app.py
-- sl_debate.py will be deprecated in future versions
-
----
-
-## ⚙️ Configuration Files
-
-### requirements.txt (3 lines)
-**Purpose**: Python package dependencies
-**Contents**:
-```
-streamlit>=1.28.0       # Web UI framework
-litellm>=1.0.0          # LLM abstraction layer
-python-dotenv>=1.0.0    # Environment variable management
-```
-
-**How to Use**:
-```bash
-pip install -r requirements.txt
-```
-
----
-
 ## 🗂️ File Organization Summary
 
 ```
 AIDebator/
 │
-├── 📘 Documentation (2,250 lines total)
-│   ├── README.md              (123 lines) - Project overview
-│   ├── ARCHITECTURE.md        (556 lines) - Technical details
-│   ├── QUICKSTART.md          (350 lines) - Getting started
-│   ├── PROJECT_SUMMARY.md     (460 lines) - Project metrics
-│   └── INDEX.md               (this file) - File navigation
+├── 📘 Documentation
+│   ├── README.md              - Project overview
+│   ├── ARCHITECTURE.md        - Technical details
+│   ├── QUICKSTART.md          - Getting started
+│   ├── PROJECT_SUMMARY.md     - Project metrics
+│   └── INDEX.md               - File navigation
 │
-├── 💻 Production Code (1,657 lines total)
-│   ├── topic_debate.py        (768 lines) - Core engine ⭐
-│   ├── app.py                 (359 lines) - Streamlit UI ⭐
-│   └── sl_debate.py           (530 lines) - Legacy version
+├── 📂 src/debate/    - CORE ENGINE ⭐
+│   ├── engine/                - Orchestration logic
+│   ├── models/                - Data structures
+│   └── participants/          - AI participant logic
+│
+├── 🎨 app.py                  - Streamlit UI ⭐
+├── ⌨️ debate_cli.py            - CLI interface ⭐
 │
 ├── ⚙️ Configuration
-│   └── requirements.txt        (3 lines)   - Dependencies
+│   └── requirements.txt        - Dependencies
 │
 └── 📂 Git (not shown)
     └── .git/                            - Version control
@@ -333,22 +280,22 @@ AIDebator/
 
 ### I want to modify/extend the code
 1. Review ARCHITECTURE.md thoroughly (30 min)
-2. Study topic_debate.py structure (30 min)
+2. Study `src/debate/` structure (30 min)
 3. Read relevant docstrings in code (15 min)
 4. Write your extension
 
 ### I want to use it in my code
-1. Read topic_debate.py docstrings (20 min)
+1. Read `src/debate/` docstrings (20 min)
 2. Review QUICKSTART.md examples (10 min)
 3. Import and use in your project
 
 ### I want to troubleshoot issues
 1. Check QUICKSTART.md "Troubleshooting" section
 2. Review error messages in app.py (try-catch blocks)
-3. Check logging output from topic_debate.py
+3. Check logging output
 
 ### I want to integrate with my system
-1. Study DebateSession class in topic_debate.py
+1. Study `DebateSession` class in `src/debate/engine/session.py`
 2. Understand data flow in ARCHITECTURE.md
 3. Review extension points in ARCHITECTURE.md
 4. Implement custom Participant or modify flows
@@ -372,29 +319,29 @@ AIDebator/
 ## 🔧 Common Tasks
 
 ### Task: Run a Debate
-**Files**: app.py, topic_debate.py
+**Files**: app.py, `src/debate/`
 **Time**: 5 min setup + 2-5 min execution
 **Steps**:
-1. Run `streamlit run app.py`
-2. Configure in sidebar
-3. Click "Start Debate"
+1. Run `streamlit run app.py` OR `python debate_cli.py`
+2. Configure parameters
+3. Start the debate
 
 ### Task: Add Custom Scoring
-**Files**: topic_debate.py (Judge class)
+**Files**: `src/debate/participants/judge.py`
 **Time**: 30 min
 **Steps**:
-1. Modify Judge.score_debate() method
+1. Modify `Judge.score_debate()` method
 2. Update scoring prompt
 3. Parse new JSON fields
 
 ### Task: Support New Participant Type
-**Files**: topic_debate.py
+**Files**: `src/debate/participants/`
 **Time**: 45 min
 **Steps**:
-1. Create new class extending Participant
-2. Implement get_role()
+1. Create new class in a new file extending `Participant`
+2. Implement `get_role()`
 3. Add custom methods
-4. Integrate into DebateSession
+4. Integrate into `DebateSession`
 
 ### Task: Deploy to Production
 **Files**: app.py, requirements.txt, .env
@@ -415,8 +362,9 @@ AIDebator/
 - ...dig into architecture? → ARCHITECTURE.md
 - ...see metrics/status? → PROJECT_SUMMARY.md
 - ...navigate files? → INDEX.md (you are here)
-- ...use core engine? → topic_debate.py
+- ...use core engine? → `src/debate/`
 - ...build UI? → app.py
+- ...use CLI? → debate_cli.py
 - ...deploy? → requirements.txt
 
 ---

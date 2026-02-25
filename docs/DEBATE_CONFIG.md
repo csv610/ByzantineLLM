@@ -64,7 +64,7 @@ class DebateConfig:
 ### Method 1: Direct Instantiation
 
 ```python
-from src.debate_platform import DebateConfig
+from src.debate import DebateConfig
 
 config = DebateConfig(
     topic="AI will improve employment",
@@ -88,7 +88,7 @@ config_dict = {
     "num_rounds": 5
 }
 
-from src.debate_platform import DebateConfig
+from src.debate import DebateConfig
 config = DebateConfig(**config_dict)
 ```
 
@@ -96,7 +96,7 @@ config = DebateConfig(**config_dict)
 
 ```python
 import json
-from src.debate_platform import DebateConfig
+from src.debate import DebateConfig
 
 # Load from JSON
 with open("debate_config.json") as f:
@@ -161,7 +161,7 @@ print(msg)       # "Topic cannot be empty"
 ### Using from_config() Class Method
 
 ```python
-from src.debate_platform import DebateConfig, DebateSession
+from src.debate import DebateConfig, DebateSession
 
 # Create config
 config = DebateConfig(
@@ -213,7 +213,7 @@ def from_config(cls, config: DebateConfig) -> "DebateSession":
 ### Use Case 1: Programmatic Debate Creation
 
 ```python
-from src.debate_platform import DebateConfig, DebateSession
+from src.debate import DebateConfig, DebateSession
 
 # Create multiple debates with different configurations
 topics = [
@@ -241,7 +241,7 @@ for topic in topics:
 
 ```python
 import json
-from src.debate_platform import DebateConfig, DebateSession
+from src.debate import DebateConfig, DebateSession
 
 # Load configuration from file
 with open("config.json") as f:
@@ -262,7 +262,7 @@ result = debate.run(num_rounds=config.num_rounds)
 ### Use Case 3: Building a Debate Manager
 
 ```python
-from src.debate_platform import DebateConfig, DebateSession
+from src.debate import DebateConfig, DebateSession
 from typing import List
 
 class DebateManager:
@@ -297,7 +297,7 @@ manager.run_all()
 
 ```python
 import requests
-from src.debate_platform import DebateConfig, DebateSession
+from src.debate import DebateConfig, DebateSession
 
 # Fetch debate configuration from API
 response = requests.get("https://api.example.com/debate-config")
@@ -333,7 +333,7 @@ requests.post("https://api.example.com/debate-result", json=result.to_dict())
 
 ```python
 import json
-from src.debate_platform import DebateConfig, DebateSession
+from src.debate import DebateConfig, DebateSession
 
 # Load from file
 with open("debate_config.json") as f:
@@ -392,7 +392,7 @@ with open("config.json", "w") as f:
 ### In CLI (debate_cli.py)
 
 ```python
-from src.debate_platform import DebateConfig
+from src.debate import DebateConfig
 
 # Load from JSON file
 config = DebateConfig(**json.load(open("config.json")))
@@ -414,7 +414,7 @@ result = debate.run(num_rounds=config.num_rounds)
 ### In Web UI (app.py)
 
 ```python
-from src.debate_platform import DebateConfig
+from src.debate import DebateConfig
 
 # Build from Streamlit inputs
 config = DebateConfig(
@@ -442,7 +442,7 @@ else:
 ### Validation Errors
 
 ```python
-from src.debate_platform import DebateConfig
+from src.debate import DebateConfig
 
 config = DebateConfig(
     topic="Valid topic",
@@ -461,7 +461,7 @@ if not is_valid:
 ### Creation Errors
 
 ```python
-from src.debate_platform import DebateConfig, DebateSession
+from src.debate import DebateConfig, DebateSession
 
 config = DebateConfig(...)
 is_valid, msg = config.validate()
@@ -482,7 +482,7 @@ except ValueError as e:
 
 ```python
 import json
-from src.debate_platform import DebateConfig, DebateSession
+from src.debate import DebateConfig, DebateSession
 
 def run_debates_from_file(filename: str):
     """Run multiple debates from a JSON file."""
@@ -508,7 +508,7 @@ def run_debates_from_file(filename: str):
 ### Example 2: Configuration Template System
 
 ```python
-from src.debate_platform import DebateConfig
+from src.debate import DebateConfig
 
 class DebateConfigTemplate:
     @staticmethod
@@ -543,7 +543,7 @@ debate = DebateSession.from_config(config)
 ### Example 3: Configuration Validation with Detailed Feedback
 
 ```python
-from src.debate_platform import DebateConfig
+from src.debate import DebateConfig
 
 def validate_and_report(config: DebateConfig) -> bool:
     """Validate config and provide detailed feedback."""

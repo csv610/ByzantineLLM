@@ -97,7 +97,7 @@ Simple text-based interface, great for automation
 
 **Option 3: Python API (Reusable library)**
 ```python
-from src.debate_platform import DebateConfig, DebateSession
+from src.debate import DebateConfig, DebateSession
 
 config = DebateConfig(
     topic="Your topic",
@@ -152,11 +152,11 @@ python debate_cli.py --config debate_config.json
 
 - **Production-Ready Code**: 100% type hints, comprehensive error handling, full logging
 - **Modular Architecture**: Core engine works independently from UI—use CLI, API, or web interface
-- **No UI Dependencies**: Core `topic_debate.py` has zero Streamlit dependencies
+- **No UI Dependencies**: Core engine in `src.debate` has zero Streamlit dependencies
 - **Flexible Deployment**: Web UI, CLI, Python API, or JSON configuration
 - **Quality Control**: Automatic debate termination prevents low-quality continuation
 - **Evidence-Based**: 40% scoring weight on evidence incentivizes factual arguments
-- **Comprehensive Documentation**: 4,000+ lines covering all features and use cases
+- **Comprehensive Documentation**: Detailed guides covering all features and use cases
 - **Multi-LLM Support**: Works with 20+ providers via litellm
 - **Extensible**: Easy to add custom participants, scoring criteria, or analysis
 

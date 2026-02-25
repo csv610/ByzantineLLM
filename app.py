@@ -4,11 +4,11 @@ Streamlit UI for Multi-Participant AI Debate Platform.
 This module provides the web interface for the debate platform, allowing users
 to configure and run debates with different LLM models.
 
-The core debate logic is imported from src.debate_platform module.
+The core debate logic is imported from src.debate module.
 """
 
 import streamlit as st
-from src.debate_platform import (
+from src.debate import (
     Organizer,
     Debater,
     Judge,

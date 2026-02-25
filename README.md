@@ -11,21 +11,38 @@ The system operates under a "Zero-Trust" policy through a deterministic 6-step w
 ```mermaid
 sequenceDiagram
     autonumber
-    participant U as User/Config
-    participant N as Participants (N Nodes)
+    participant U as User
+    participant N1 as Node 1
+    participant N2 as Node 2
+    participant Ni as Node N
     participant A as Anonymity Layer
     participant J as Judge
 
-    U->>N: (1) Broadcast same question/topic
-    N->>N: (2) Generate independent proposals
-    N->>A: Submit raw proposals
-    A->>A: (3) Strip model names (Participant A, B...)
-    A->>N: (4) Distribute anonymous proposals for cross-audit
-    N->>N: Evaluate & Rank all N participants
-    N->>J: (5) Submit NxN ranking matrix
-    J->>J: Analyze matrix for Byzantine outliers
-    J->>J: (6) Determine winner & synthesize content
-    J->>U: Final Authoritative Response
+    Note over N1,Ni: (Step 1) N Participants Initialized
+    
+    U->>N1: (Step 2) Send Question
+    U->>N2: (Step 2) Send Question
+    U->>Ni: (Step 2) Send Question
+    
+    Note over N1,Ni: [INDEPENDENT GENERATION]<br/>Nodes cannot see each other's work
+    
+    N1->>A: Raw Proposal 1
+    N2->>A: Raw Proposal 2
+    Ni->>A: Raw Proposal N
+    
+    Note over A: (Step 3) Anonymize & Broadcast
+    A->>N1: All N Anonymous Proposals
+    A->>N2: All N Anonymous Proposals
+    A->>Ni: All N Anonymous Proposals
+    
+    Note over N1,Ni: Evaluate & Rank based on common criteria
+    
+    N1->>J: (Step 4) Send N ranks
+    N2->>J: (Step 4) Send N ranks
+    Ni->>J: (Step 4) Send N ranks
+    
+    Note over J: (Step 5) Evaluate NxN Matrix
+    Note over J: (Step 6) Final Verdict & Response
 ```
 
 1.  **Independent Initialization:** N participants (using different LLMs) are initialized. The system does not label or instruct any node to be "Byzantine."
@@ -43,29 +60,40 @@ The framework moves from decentralized generation to centralized verification th
 
 ```mermaid
 graph TD
-    Start((Question)) --> P[Parallel Proposal Generation]
-    
-    subgraph "The Blind Network"
-    P --> Anon{Anonymizer}
-    Anon --> |Participant A| N1[Node 1 Audits All]
-    Anon --> |Participant B| N2[Node 2 Audits All]
-    Anon --> |Participant N| N3[Node N Audits All]
+    Start((Broadcast Question)) --> N1P[Phase 2: Node 1 Proposal]
+    Start --> N2P[Phase 2: Node 2 Proposal]
+    Start --> NiP[Phase 2: Node N Proposal]
+
+    subgraph "Independent Generation"
+    N1P
+    N2P
+    NiP
     end
 
-    N1 --> Matrix[NxN Ranking Matrix]
-    N2 --> Matrix
-    N3 --> Matrix
+    N1P --> Anon{Anonymity Layer}
+    N2P --> Anon
+    NiP --> Anon
 
-    subgraph "The Judge's Chambers"
-    Matrix --> BFT[Byzantine Behavior Discovery]
-    BFT --> Stats[Statistical Consensus Extraction]
-    Stats --> Final[Authoritative Finality]
+    subgraph "Phase 3 & 4: Blind Ranking Matrix"
+    Anon --> |All N| N1R[Node 1 Ranks All]
+    Anon --> |All N| N2R[Node 2 Ranks All]
+    Anon --> |All N| NiR[Node N Ranks All]
+    N1R --> Matrix[NxN Ranking Table]
+    N2R --> Matrix
+    NiR --> Matrix
     end
 
-    Final --> Output((Verified Response))
+    subgraph "Phase 5 & 6: Judge's Finality"
+    Matrix --> Analysis[Byzantine Discovery]
+    Analysis --> Synthesis[Authoritative Response]
+    end
 
-    style BFT fill:#f96,stroke:#333,stroke-width:2px
+    Synthesis --> Output((Verified Response))
+
     style Anon fill:#bbf,stroke:#333,stroke-dasharray: 5 5
+    style N1P fill:#fff,stroke:#333
+    style N2P fill:#fff,stroke:#333
+    style NiP fill:#fff,stroke:#333
 ```
 
 ---

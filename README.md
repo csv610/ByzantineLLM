@@ -54,6 +54,21 @@ sequenceDiagram
 
 ---
 
+## 📊 Technical Complexity
+
+The framework is designed for high-integrity consensus, which involves a multi-stage communication protocol. The total number of LLM calls scales linearly with the number of participants ($N$):
+
+| Phase | Calls | Description |
+| :--- | :--- | :--- |
+| **Generation** | $N$ | Each node generates an independent proposal. |
+| **Audit** | $N$ | Each node cross-evaluates all $N$ anonymous proposals. |
+| **Judgment** | $1$ | The Judge synthesizes the final result from the $N \times N$ matrix. |
+| **Total** | **$2N + 1$** | Total API calls per consensus session. |
+
+> **Note on Token Scaling:** While the number of *calls* is linear ($O(N)$), the *input token volume* for the Audit and Judgment phases scales quadratically ($O(N^2)$) as each evaluator must process the proposals of all peers.
+
+---
+
 ## 🚀 Key Features
 
 *   **Zero-Knowledge Protocol:** No node is pre-assigned a "Byzantine" role. Malicious behavior is discovered, not declared.

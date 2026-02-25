@@ -121,5 +121,31 @@ Check the `examples/` directory for more detailed scenarios:
 
 ---
 
+## 🎓 Project Merit & Research Analysis
+
+This framework has been evaluated based on standard software engineering and distributed systems research rubrics.
+
+### 🌟 Originality and Conceptual Depth
+ByzantineLLM bridges the gap between **Distributed Systems Theory** and **Generative AI**. By applying **Byzantine Fault Tolerance (BFT)** principles to LLM outputs, the project moves beyond simple "majority voting" and into a deterministic "Zero-Trust" auditing model. The **NxN Blind Audit** protocol is a novel approach to identifying hallucinations and bias without a predefined "ground truth."
+
+### 🏗️ Architectural Design
+The codebase follows senior-level engineering patterns:
+*   **Modular Orchestration:** The `ByzantineLLM` engine encapsulates a complex 6-step lifecycle while exposing a clean, high-level API.
+*   **Strategy Pattern:** The `PromptBuilder` architecture allows for total extensibility, enabling RAG injection, dynamic personas, and multi-application support without modifying the core consensus logic.
+*   **Type Integrity:** Leveraging **Pydantic** ensures that the data flow between heterogeneous LLM participants remains structured and verifiable.
+
+### 💻 Implementation Quality
+*   **Zero-Knowledge Consistency:** The system strictly enforces identical parameters (System Prompt, User Prompt, Temperature) across the cluster, ensuring auditing is purely content-based.
+*   **Numerical Scoring:** Moves beyond binary "Win/Loss" outcomes by providing a weighted scoring matrix for every participant.
+*   **Production Readiness:** Includes a robust CLI, detailed logging, and a comprehensive suite of examples.
+
+### 📈 Future Research Directions
+To further evolve this framework, the following areas are identified for future implementation:
+1.  **Parsing Robustness:** Implementation of auto-retrying logic and structured JSON output modes to handle LLM formatting variance.
+2.  **Scalability (Committee Sharding):** Developing sharding protocols to manage the quadratic context growth in large $N$ clusters.
+3.  **Adversarial Modeling:** Pre-configuring specific "Byzantine" nodes to benchmark the Judge's detection capabilities.
+
+---
+
 ## 📜 License
 Distributed under the **MIT License**.

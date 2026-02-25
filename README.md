@@ -61,9 +61,9 @@ The framework is designed for high-integrity consensus, balancing auditing depth
 | Phase | API Calls | Peer Evaluations | Description |
 | :--- | :--- | :--- | :--- |
 | **Generation** | $N$ | - | Each node generates an independent proposal. |
-| **Audit** | $N$ | $N^2$ | Each node ranks the entire set of $N$ proposals in a single batch call. |
-| **Judgment** | $1$ | $N$ | The Judge synthesizes the final $N \times N$ ranking matrix. |
-| **Total** | **$2N + 1$** | **$N^2 + N$** | **Linear API cost / Quadratic discovery depth.** |
+| **Audit** | $N$ | $N^2$ | $N$ nodes each evaluate all $N$ peer proposals. |
+| **Judgment** | $1$ | $2N$ | The Judge evaluates $N$ rankings and $N$ proposals. |
+| **Total** | **$2N + 1$** | **$N^2 + 2N$** | **Linear API cost / Quadratic discovery depth.** |
 
 > **Note on Efficiency:** By batching the Audit phase into $N$ calls rather than $N^2$, we allow the models to perform *relative ranking*, which is significantly more effective at identifying quality outliers than isolated rating. However, as noted in the research section, the **input token volume** still scales quadratically ($O(N^2)$).
 

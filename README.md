@@ -8,12 +8,65 @@ ByzantineLLM is a research framework for studying **Byzantine Fault Tolerance (B
 
 The system operates under a "Zero-Trust" policy through a deterministic 6-step workflow:
 
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User/Config
+    participant N as Participants (N Nodes)
+    participant A as Anonymity Layer
+    participant J as Judge
+
+    U->>N: (1) Broadcast same question/topic
+    N->>N: (2) Generate independent proposals
+    N->>A: Submit raw proposals
+    A->>A: (3) Strip model names (Participant A, B...)
+    A->>N: (4) Distribute anonymous proposals for cross-audit
+    N->>N: Evaluate & Rank all N participants
+    N->>J: (5) Submit NxN ranking matrix
+    J->>J: Analyze matrix for Byzantine outliers
+    J->>J: (6) Determine winner & synthesize content
+    J->>U: Final Authoritative Response
+```
+
 1.  **Independent Initialization:** N participants (using different LLMs) are initialized. The system does not label or instruct any node to be "Byzantine."
 2.  **Parallel Proposal:** All participants receive the **same question** and generate an independent answer.
 3.  **Blind Cross-Auditing:** All responses are anonymized (e.g., "Participant A"). Every participant evaluates all N anonymous responses based on objective criteria.
 4.  **Independent Ranking:** Participants submit a ranked list of these anonymous IDs to the Judge.
 5.  **Matrix Discovery:** The **Judge** evaluates the $N \times N$ ranking table. It must **discover** Byzantine behavior (hallucinations, bias, or sabotage) purely through statistical outliers and logical inconsistencies in the matrix.
 6.  **Verified Synthesis:** The Judge de-anonymizes the winner and generates a final authoritative response.
+
+---
+
+## 🛡️ The Zero-Trust Analysis Loop
+
+The framework moves from decentralized generation to centralized verification through rigorous cross-auditing and statistical discovery.
+
+```mermaid
+graph TD
+    Start((Question)) --> P[Parallel Proposal Generation]
+    
+    subgraph "The Blind Network"
+    P --> Anon{Anonymizer}
+    Anon --> |Participant A| N1[Node 1 Audits All]
+    Anon --> |Participant B| N2[Node 2 Audits All]
+    Anon --> |Participant N| N3[Node N Audits All]
+    end
+
+    N1 --> Matrix[NxN Ranking Matrix]
+    N2 --> Matrix
+    N3 --> Matrix
+
+    subgraph "The Judge's Chambers"
+    Matrix --> BFT[Byzantine Behavior Discovery]
+    BFT --> Stats[Statistical Consensus Extraction]
+    Stats --> Final[Authoritative Finality]
+    end
+
+    Final --> Output((Verified Response))
+
+    style BFT fill:#f96,stroke:#333,stroke-width:2px
+    style Anon fill:#bbf,stroke:#333,stroke-dasharray: 5 5
+```
 
 ---
 

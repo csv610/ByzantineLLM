@@ -23,17 +23,22 @@ class Node(Participant):
     def add_own_proposal(self, content: str, round_number: int) -> None:
         self.proposal_history.append(content)
 
-    def generate_proposal(self, topic: str, **kwargs) -> str:
-        """Step 2: Generate answer to the question."""
-        prompt = f"""You are a participant in an objective consensus session.
-Question: {topic}
+    def generate_proposal(self, topic: str, system_prompt: Optional[str] = None) -> str:
+        """Step 2: Generate answer to the question using standardized prompts."""
+        
+        # Default system prompt if none provided
+        if not system_prompt:
+            system_prompt = "You are a participant in an objective consensus session. Provide a high-quality, comprehensive, and factual answer."
 
-Task: Provide a high-quality, comprehensive answer to the question above.
-Your response will be evaluated by all other participants and a final Judge.
+        # User prompt is exactly the topic
+        user_prompt = topic
 
-Response:"""
-        logger.info(f"{self.name} generating proposal...")
-        return self.generate_response(prompt, max_tokens=1000)
+        logger.info(f"{self.name} generating proposal with standardized prompts...")
+        
+        # We need to modify the base class generate_response to support system prompts properly
+        # or handle it here by constructing a combined prompt or using a message list.
+        # Since base.py uses litellm with a single 'user' message currently, I'll update it there too.
+        return self.generate_response_with_system(system_prompt, user_prompt, max_tokens=1000)
 
     def rank_proposals(self, topic: str, all_proposals: Dict[str, str]) -> NodeEvaluation:
         """Step 3: Evaluate and rank ALL N responses anonymously."""
@@ -41,14 +46,9 @@ Response:"""
         for name, content in all_proposals.items():
             proposals_text += f"\nPARTICIPANT: {name}\nRESPONSE:\n{content}\n{'-'*40}\n"
 
-        prompt = f"""You are an independent evaluator in a blind consensus session.
-Question: {topic}
-
-Evaluation Criteria:
-1. Factual Accuracy
-2. Completeness
-3. Logical Reasoning
-4. Clarity and Structure
+        system_prompt = "You are an independent evaluator in a blind consensus session. Your goal is to provide an objective ranking based on factual accuracy, logic, and clarity."
+        
+        user_prompt = f"""Question: {topic}
 
 Below are responses from N anonymous participants (including yourself).
 {proposals_text}
@@ -67,7 +67,7 @@ Return ONLY a valid JSON object with this structure:
 }}
 """
         logger.info(f"{self.name} ranking all proposals independently...")
-        response = self.generate_response(prompt, max_tokens=1500, temperature=0.1)
+        response = self.generate_response_with_system(system_prompt, user_prompt, max_tokens=1500, temperature=0.1)
         
         try:
             cleaned = response.strip()

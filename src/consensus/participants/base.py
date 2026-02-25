@@ -1,7 +1,8 @@
-"""Base participant class for debate platform."""
+"""Base participant class for consensus platform."""
 
 import logging
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from litellm import completion
 
@@ -9,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class Participant(ABC):
-    """Base class for all debate participants."""
+    """Base class for all consensus participants."""
 
     def __init__(self, name: str, model: str):
         """
@@ -17,7 +18,7 @@ class Participant(ABC):
 
         Args:
             name: Participant's display name
-            model: LLM model identifier (e.g., 'gpt-4', 'claude-3-opus-20240229')
+            model: LLM model identifier
         """
         self.name = name
         self.model = model
@@ -28,27 +29,31 @@ class Participant(ABC):
         pass
 
     def generate_response(self, prompt: str, max_tokens: int = 1000, response_format: type = None, temperature: float = 0.7) -> str:
+        """Simple response generation with user prompt only."""
+        return self.generate_response_with_system(None, prompt, max_tokens, response_format, temperature)
+
+    def generate_response_with_system(
+        self, 
+        system_prompt: Optional[str], 
+        user_prompt: str, 
+        max_tokens: int = 1000, 
+        response_format: type = None, 
+        temperature: float = 0.7
+    ) -> str:
         """
-        Generate response using litellm.
-
-        Args:
-            prompt: The prompt to send to the model
-            max_tokens: Maximum tokens in response
-            response_format: Optional Pydantic model class for structured output
-            temperature: Sampling temperature (0.0 to 1.0)
-
-        Returns:
-            Generated response text (JSON string if response_format is provided)
-
-        Raises:
-            Exception: If API call fails
+        Generate response using litellm with optional system prompt.
         """
         try:
             logger.debug(f"Generating response for {self.name} using {self.model}")
             
+            messages = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": user_prompt})
+            
             kwargs = {
                 "model": self.model,
-                "messages": [{"role": "user", "content": prompt}],
+                "messages": messages,
                 "max_tokens": max_tokens,
                 "temperature": temperature
             }
@@ -59,7 +64,7 @@ class Participant(ABC):
                     response = completion(**kwargs)
                 except Exception as e:
                     if "UnsupportedParamsError" in str(e) or "response_format" in str(e):
-                        logger.warning(f"Model {self.model} does not support response_format. Falling back to text response.")
+                        logger.warning(f"Model {self.model} does not support response_format. Falling back to text.")
                     else:
                         raise e
             else:

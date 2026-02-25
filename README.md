@@ -102,6 +102,7 @@ graph TD
 
 *   **Zero-Knowledge Protocol:** No node is pre-assigned a "Byzantine" role. Malicious behavior is discovered, not declared.
 *   **Total Anonymity:** Participants cannot see model names or node identities during evaluation, ensuring purely content-based auditing.
+*   **Consistency Protocol:** Every node receives the exact same system and user prompts to ensure absolute objectivity and a level playing field.
 *   **Self-Healing Consensus:** The protocol is designed to isolate low-quality or adversarial contributions through peer-to-peer disagreement analysis.
 *   **Heterogeneous Evaluation:** Mix high-capability and low-capability models to test how the "Byzantine" effect naturally emerges from model limitations.
 

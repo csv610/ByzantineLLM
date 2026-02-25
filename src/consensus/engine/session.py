@@ -52,9 +52,14 @@ class ConsensusSession:
 
         # Step 2: Generate Answers
         print("\n[Step 2] Nodes are generating their responses...")
+        
+        # Standardized system prompt for ALL nodes
+        system_prompt = "You are a participant in an objective consensus session. Provide a high-quality, comprehensive, and factual answer."
+        
         real_name_to_content = {}
         for node in self.nodes:
-            content = node.generate_proposal(self.topic)
+            # Step 2: Every model receives the SAME system and user prompt
+            content = node.generate_proposal(self.topic, system_prompt=system_prompt)
             self.proposals.append(Proposal(
                 participant_name=node.name,
                 participant_role=node.get_role(),

@@ -1,7 +1,7 @@
 """Node participant for decentralized consensus."""
 
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 import json
 
 from .base import Participant
@@ -16,22 +16,14 @@ class Node(Participant):
     def __init__(self, name: str, model: str, temperature: float = 0.7):
         super().__init__(name, model)
         self.temperature = temperature
-        self.proposal_history: List[str] = []
 
     def get_role(self) -> str:
         return "consensus_node"
 
-    def add_own_proposal(self, content: str, round_number: int) -> None:
-        self.proposal_history.append(content)
-
     def generate_proposal(self, user_prompt: str, system_prompt: Optional[str] = None) -> str:
         """Step 2: Generate answer to the question using standardized prompts."""
-        
-        # Use provided system prompt or default
         system_prompt = system_prompt or "You are a participant in an objective consensus session. Provide a high-quality, comprehensive, and factual answer."
-
         logger.info(f"{self.name} generating proposal...")
-        
         return self.generate_response_with_system(system_prompt, user_prompt, max_tokens=1000, temperature=self.temperature)
 
     def rank_proposals(self, topic: str, all_proposals: Dict[str, str]) -> NodeEvaluation:

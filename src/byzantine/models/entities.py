@@ -1,7 +1,7 @@
 """Data entity models for ranking-based Byzantine Consensus."""
 
 import logging
-from typing import List, Dict, Optional
+from typing import List, Dict
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)

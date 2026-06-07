@@ -1,1 +1,1 @@
-"""AI Debate Platform package."""
+"""ByzantineLLM: Blind Consensus Framework."""

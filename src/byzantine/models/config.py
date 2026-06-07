@@ -16,3 +16,12 @@ class ByzantineModelsConfig(BaseModel):
         if not v.strip():
             raise ValueError("Judge model string cannot be empty")
         return v.strip()
+
+    @field_validator("node_models")
+    @classmethod
+    def node_models_not_empty(cls, v: List[str]) -> List[str]:
+        """Validate that individual node model strings are not empty."""
+        for item in v:
+            if not item.strip():
+                raise ValueError("Node model string cannot be empty")
+        return v

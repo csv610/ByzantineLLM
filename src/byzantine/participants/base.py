@@ -4,6 +4,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Optional
 
+import litellm
 from litellm import completion
 
 logger = logging.getLogger(__name__)
@@ -61,15 +62,11 @@ class Participant(ABC):
             if response_format:
                 try:
                     kwargs["response_format"] = response_format
-                    response = completion(**kwargs)
-                except Exception as e:
-                    if "UnsupportedParamsError" in str(e) or "response_format" in str(e):
-                        logger.warning(f"Model {self.model} does not support response_format. Falling back to text.")
-                    else:
-                        raise e
-            else:
-                response = completion(**kwargs)
-            return response.choices[0].message.content
+                    return completion(**kwargs).choices[0].message.content
+                except litellm.UnsupportedParamsError:
+                    logger.warning(f"Model {self.model} does not support response_format. Falling back to text.")
+
+            return completion(**kwargs).choices[0].message.content
         except Exception as e:
             logger.error(f"Error generating response for {self.name}: {str(e)}")
             raise

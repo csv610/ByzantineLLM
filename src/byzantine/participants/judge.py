@@ -1,7 +1,7 @@
 """Judge for blind Byzantine Consensus."""
 
 import logging
-from typing import List, Dict
+from typing import Dict
 import json
 
 from .base import Participant
@@ -54,15 +54,15 @@ Task:
 5. Based on the content of the highest-ranked winner, write the FINAL, authoritative answer to the original question.
 
 Return ONLY a valid JSON object with this structure:
-{
+{{
     "final_ranking": ["Winner Name", "Runner Up", ...],
-    "scores": {
+    "scores": {{
         "Participant Name": 9.5,
         "Another Participant": 7.0
-    },
+    }},
     "byzantine_detection": "Analysis of any detected adversarial or inconsistent behavior.",
     "final_response": "The authoritative response based on the winner's content."
-}
+}}
 """
         logger.info("Judge is analyzing the blind NxN matrix for Byzantine behavior...")
         response = self.generate_response(prompt, max_tokens=3000, temperature=0.1)
@@ -77,6 +77,7 @@ Return ONLY a valid JSON object with this structure:
             logger.error(f"Judge failed to generate JSON verdict: {e}")
             return {
                 "final_ranking": list(all_proposals.keys()),
+                "scores": {name: 0.0 for name in all_proposals},
                 "byzantine_detection": "Error parsing verdict.",
                 "final_response": "The judge failed to reach a structured conclusion."
             }

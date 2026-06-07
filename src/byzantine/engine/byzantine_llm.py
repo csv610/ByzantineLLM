@@ -1,12 +1,11 @@
 """Core engine for the Byzantine LLM protocol."""
 
 import logging
-import string
 from datetime import datetime
-from typing import List, Dict, Optional, Any
+from typing import List, Optional
 
 from ..models.config import ByzantineModelsConfig
-from ..models.entities import Proposal, ConsensusResult, NodeEvaluation
+from ..models.entities import Proposal, ConsensusResult
 from ..participants import Node, Judge
 from .prompts import PromptBuilder
 
@@ -42,7 +41,7 @@ class ByzantineLLM:
         """
         Execute the 6-step Blind Consensus workflow for a given question.
         """
-        print(f"\n🚀 Starting Blind NxN Byzantine Consensus: '{question}'")
+        print(f"\nStarting Blind NxN Byzantine Consensus: '{question}'")
         print(f"Nodes: {len(self.nodes)} (Full Blindness Mode)")
 
         # Step 2: Parallel Proposal Generation
@@ -64,11 +63,10 @@ class ByzantineLLM:
                 word_count=len(content.split())
             ))
             real_name_to_content[node.name] = content
-            print(f"✅ {node.name} finished.")
+            print(f"  {node.name} finished.")
 
         # Step 3: Anonymization
-        anonymous_ids = list(string.ascii_uppercase)
-        real_to_anon = {node.name: f"Participant {anonymous_ids[i]}" for i, node in enumerate(self.nodes)}
+        real_to_anon = {node.name: f"Participant {i+1}" for i, node in enumerate(self.nodes)}
         anon_to_real = {v: k for k, v in real_to_anon.items()}
         anon_proposals = {real_to_anon[name]: content for name, content in real_name_to_content.items()}
 
@@ -78,7 +76,7 @@ class ByzantineLLM:
         for node in self.nodes:
             eval_obj = node.rank_proposals(question, anon_proposals)
             anon_rankings[node.name] = eval_obj
-            print(f"✅ {node.name} submitted audit.")
+            print(f"  {node.name} submitted audit.")
 
         # Step 5 & 6: Judge Analysis & Matrix Discovery
         print("\n[Step 5 & 6] Judge discovering consensus via NxN Matrix...")
@@ -112,11 +110,11 @@ class ByzantineLLM:
             participants={n.name: n.get_role() for n in self.nodes}
         )
 
-        print(f"🏆 Consensus Winner: {real_winner}")
-        print("\n" + "="*50)
+        print(f"\nConsensus Winner: {real_winner}")
+        print("\n" + "=" * 50)
         print("FINAL AUTHORITATIVE RESPONSE:")
         print("="*50)
         print(result.final_response)
-        print("="*50)
-        
+        print("=" * 50)
+
         return result
